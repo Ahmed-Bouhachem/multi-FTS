@@ -40,4 +40,13 @@
     <maxVel>0.1</maxVel>
   </gazebo>
 
+
+  <gazebo>
+    <xacro:if value="$(arg is_ignition)">
+      <plugin name="bumperbot_gazebo" filename="libbumperbot_gazebo.so">
+        <robotNamespace>/bumperbot</robotNamespace>
+        <use_sim_time>true</use_sim_time>
+      </plugin>
+  </gazebo>
+
 </robot>
