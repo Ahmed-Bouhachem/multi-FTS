@@ -16,6 +16,8 @@ __pycache__/
 
 # VSCode
 .vscode/
+.vscode-server/
+.vscode-remote-containers/
 
 # Backup or temp files
 *~
@@ -30,3 +32,10 @@ Makefile
 
 # Colcon meta
 .colcon/
+
+# Docker
+.devcontainer/
+
+# Other common
+*.DS_Store
+*.out
