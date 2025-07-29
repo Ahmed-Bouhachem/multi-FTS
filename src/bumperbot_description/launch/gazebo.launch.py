@@ -1,10 +1,23 @@
 from launch import LaunchDescription
 from pathlib import Path
-from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, ExecuteProcess
+
+# ---------- actions ----------
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,   # ← THIS line is mandatory
+    SetEnvironmentVariable,
+)
+
+# ---------- other launch utils ----------
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
-from ament_index_python.packages import get_package_share_directory
+
+# ---------- ROS 2 ----------
+from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+
+# ---------- misc ----------
+from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
@@ -41,10 +54,18 @@ def generate_launch_description():
     )
 
     # Launch Gazebo (gz sim) with empty world
-    gz_sim = ExecuteProcess(
-        cmd=['gz', 'sim', '-v', '4', 'empty.sdf'],
-        output='screen'
-    )
+    gz_sim = IncludeLaunchDescription(
+    PythonLaunchDescriptionSource(
+        os.path.join(
+            get_package_share_directory("ros_gz_sim"),
+            "launch",
+            "gz_sim.launch.py")),
+    launch_arguments={
+        # ONE string, not a list
+        "gz_args": "-r -v 4 empty.sdf"
+    }.items()
+)
+
 
     # Spawn robot from robot_description topic
     gz_spawn_entity = Node(

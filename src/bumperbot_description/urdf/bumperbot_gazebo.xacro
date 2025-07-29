@@ -41,12 +41,23 @@
   </gazebo>
 
 
+  <!-- Pick the right ros2_control plugin: Ignition or classic Gazebo -->
   <gazebo>
+    <!-- When launching with ignition-gazebo (ros_gz), use the Ignition plugin -->
     <xacro:if value="$(arg is_ignition)">
-      <plugin name="bumperbot_gazebo" filename="libbumperbot_gazebo.so">
-        <robotNamespace>/bumperbot</robotNamespace>
-        <use_sim_time>true</use_sim_time>
+      <plugin filename="ign_ros2_control-system"
+              name="ign_ros2_control::IgnitionROS2ControlPlugin">
+        <parameters></parameters>
       </plugin>
+    </xacro:if>
+
+    <!-- When *not* using ignition (i.e., classic Gazebo), load the gz_ros2_control plugin -->
+    <xacro:unless value="$(arg is_ignition)">
+      <plugin filename="gz_ros2_control-system"
+              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters></parameters>
+      </plugin>
+    </xacro:unless>
   </gazebo>
 
 </robot>
