@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <link name="base_footprint"/>
+  
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0.04" rpy="0 0 0" />
+      <mass value="0.8"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02" />
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.2 0.15 0.08"/>
+      </geometry>
+      <material name="blue"><color rgba="0 0 1 1"/></material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.2 0.15 0.08"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link" />
+    <origin xyz="0 0 0.033" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Wheels as cylinders -->
+  <link name="wheel_right_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.033" length="0.02"/>
+      </geometry>
+      <material name="black"><color rgba="0 0 0 1"/></material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.033" length="0.02"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="wheel_right_joint" type="continuous">
+    <origin xyz="0 -0.07 0" rpy="1.57 0 0" />
+    <parent link="base_link" />
+    <child link="wheel_right_link" />
+    <axis xyz="0 0 1" />
+  </joint>
+
+  <!-- Left wheel -->
+  <link name="wheel_left_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.033" length="0.02"/>
+      </geometry>
+      <material name="black"><color rgba="0 0 0 1"/></material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.033" length="0.02"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="wheel_left_joint" type="continuous">
+    <origin xyz="0 0.07 0" rpy="1.57 0 0" />
+    <parent link="base_link" />
+    <child link="wheel_left_link" />
+    <axis xyz="0 0 1" />
+  </joint>
+
+  <ros2_control name="BumperBotSystem" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+      <param name="calculate_dynamics">true</param>
+    </hardware>
+
+    <joint name="wheel_right_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="wheel_left_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <!-- Comment out gazebo plugin for now -->
+  <!--
+  <gazebo>
+    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+  -->
+
+
+
+</robot>

@@ -1,8 +1,29 @@
 <?xml version="1.0"?>
-<robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
+<robot name="bumperbot" xmlns:xacro="http://www.ros.org/wiki/xacros">
 
-  <gazebo reference= "Wheel_right_link">
+  <!-- Add material colors for visibility -->
+  <gazebo reference="base_link">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <gazebo reference="wheel_right_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="wheel_left_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <gazebo reference="caster_front_link">
+    <material>Gazebo/Red</material>
+  </gazebo>
+
+  <gazebo reference="caster_rear_link">
+    <material>Gazebo/Red</material>
+  </gazebo>
+
+  <gazebo reference="wheel_right_link">
     <mu1>100000000000000.0</mu1>
     <mu2>100000000000000.0</mu2>
     <kp>1000000000000.0</kp>
@@ -12,7 +33,7 @@
     <fdirl>1 0 0</fdirl>
   </gazebo>
 
-  <gazebo reference= "Wheel_left_link">
+  <gazebo reference="wheel_left_link">
     <mu1>100000000000000.0</mu1>
     <mu2>100000000000000.0</mu2>
     <kp>1000000000000.0</kp>
@@ -22,7 +43,7 @@
     <fdirl>1 0 0</fdirl>
   </gazebo>
 
-  <gazebo reference= "caster_front_link">
+  <gazebo reference="caster_front_link">
     <mu1>0.1</mu1>
     <mu2>0.1</mu2>
     <kp>1000000.0</kp>
@@ -31,7 +52,7 @@
     <maxVel>0.1</maxVel>
   </gazebo>
 
-  <gazebo reference= "caster_rear_link">
+  <gazebo reference="caster_rear_link">
     <mu1>0.1</mu1>
     <mu2>0.1</mu2>
     <kp>1000000.0</kp>
@@ -39,25 +60,11 @@
     <minDepth>0.001</minDepth>
     <maxVel>0.1</maxVel>
   </gazebo>
-
-
-  <!-- Pick the right ros2_control plugin: Ignition or classic Gazebo -->
-  <gazebo>
-    <!-- When launching with ignition-gazebo (ros_gz), use the Ignition plugin -->
-    <xacro:if value="$(arg is_ignition)">
-      <plugin filename="ign_ros2_control-system"
-              name="ign_ros2_control::IgnitionROS2ControlPlugin">
-        <parameters></parameters>
-      </plugin>
-    </xacro:if>
-
-    <!-- When *not* using ignition (i.e., classic Gazebo), load the gz_ros2_control plugin -->
-    <xacro:unless value="$(arg is_ignition)">
-      <plugin filename="gz_ros2_control-system"
-              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-        <parameters></parameters>
-      </plugin>
-    </xacro:unless>
+ <!---
+  <gazebo>                  
+    <plugin name="gazebo_ros_factory" filename="libgazebo_ros_factory.so">    
+      <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
+    </plugin>
   </gazebo>
-
+  -->
 </robot>

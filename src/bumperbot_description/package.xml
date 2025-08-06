@@ -1,25 +1,40 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd"
+            schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>bumperbot_description</name>
   <version>0.0.1</version>
-  <description>URDF and meshes for the BumperBot robot model.</description>
+  <description>URDF, Xacro and meshes for the BumperBot robot model.</description>
 
   <maintainer email="bouhachem.ahmed@outlook.com">Ahmed Bouhachem</maintainer>
   <license>MIT</license>
 
+  <!--  build  -->
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>ament_cmake</build_depend>
+  <build_depend>xacro</build_depend>
 
+  <!-- run time-->
+  <!-- URDF → TF -->
+  <exec_depend>xacro</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
+
+  <!-- Gazebo Classic integration -->
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>gazebo_ros2_control</exec_depend>
+
+  <!-- ros2_control core + standard controllers -->
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>ros2_controllers</exec_depend>          <!-- diff-drive, joint_state_broadcaster … -->
+
+  <!-- GUI helpers (optional) -->
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>joint_state_publisher_gui</exec_depend>
   <exec_depend>rviz2</exec_depend>
-  <exec_depend>ros2launch</exec_depend>
-  <exec_depend>ros_gz_sim</exec_depend>
-  <exec_depend>xacro</exec_depend>
-  <exec_depend>urdf</exec_depend>
 
+  <!-- Webots integration -->
+  <exec_depend>webots_ros2_driver</exec_depend>
+
+  <!--  tests  -->
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
@@ -27,5 +42,3 @@
     <build_type>ament_cmake</build_type>
   </export>
 </package>
-
-

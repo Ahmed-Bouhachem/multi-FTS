@@ -1,51 +1,60 @@
 from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import Command
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument
-import os
+from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
-from launch.substitutions import Command, LaunchConfiguration
+import os
 
 def generate_launch_description():
     bumperbot_description_dir = get_package_share_directory('bumperbot_description')
-
-    model_arg = DeclareLaunchArgument(
-        name='model',
-        default_value=os.path.join(bumperbot_description_dir, 'urdf', 'bumperbot.urdf.xacro'),
-        description="Absolute path to the bumperbot URDF model file."
+    gazebo_ros = get_package_share_directory('gazebo_ros')
+    
+    # Process xacro file
+    xacro_file = os.path.join(bumperbot_description_dir, 'urdf', 'bumperbot.urdf.xacro')
+    robot_description = ParameterValue(
+        Command(['xacro ', xacro_file]),
+        value_type=str
     )
 
-    robot_description = Command(['xacro ', LaunchConfiguration('model')])
-
-    robot_state_publisher = Node(
+    robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{"robot_description": robot_description}],
+        parameters=[{"robot_description": robot_description}]
     )
 
-    joint_state_publisher = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        parameters=[{"robot_description": robot_description}],
+    # Use classic gzserver with factory plugin
+    gzserver = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(bumperbot_description_dir, 'launch', 'classic_gzserver.launch.py')),
+        launch_arguments={'extra_gazebo_args': ''}.items()
     )
 
-    joint_state_publisher_gui = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        parameters=[{"robot_description": robot_description}],
+    gzclient = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(gazebo_ros, 'launch', 'gzclient.launch.py'))
     )
 
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', os.path.join(bumperbot_description_dir, 'rviz', 'display.rviz')],
+    # Add delay to ensure Gazebo is fully started
+    spawn_entity_delayed = TimerAction(
+        period=5.0,  # Wait 5 seconds
+        actions=[
+            Node(
+                package='gazebo_ros',
+                executable='spawn_entity.py',
+                name='spawn_entity',
+                arguments=['-entity', 'bumperbot',
+                           '-topic', 'robot_description',
+                           '-x', '0', '-y', '0', '-z', '1.0'],
+                output='screen'
+            )
+        ]
     )
 
     return LaunchDescription([
-        model_arg,
-        robot_state_publisher,
-        joint_state_publisher,
-        joint_state_publisher_gui,
-        rviz_node
+        robot_state_publisher_node,
+        gzserver,
+        gzclient,
+        spawn_entity_delayed
     ])

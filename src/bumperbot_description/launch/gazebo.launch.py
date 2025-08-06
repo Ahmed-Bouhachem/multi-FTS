@@ -1,87 +1,59 @@
 from launch import LaunchDescription
-from pathlib import Path
-
-# ---------- actions ----------
-from launch.actions import (
-    DeclareLaunchArgument,
-    IncludeLaunchDescription,   # ← THIS line is mandatory
-    SetEnvironmentVariable,
-)
-
-# ---------- other launch utils ----------
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
-
-# ---------- ROS 2 ----------
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
-
-# ---------- misc ----------
 from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
-    # Path to bumperbot_description package
     bumperbot_description_dir = get_package_share_directory('bumperbot_description')
+    gazebo_ros = get_package_share_directory('gazebo_ros')
     
-    # Declare model file argument
     model_arg = DeclareLaunchArgument(
         name='model',
-        default_value=os.path.join(
-            bumperbot_description_dir,
-            'urdf',
-            'bumperbot.urdf.xacro'),
+        default_value=os.path.join(bumperbot_description_dir, 'urdf', 'bumperbot.urdf.xacro'),
         description="Absolute path to the bumperbot URDF model file."
     )
 
-    # Run xacro to convert to robot_description
     robot_description = ParameterValue(
         Command(['xacro ', LaunchConfiguration('model')]),
         value_type=str
     )
 
-    # Robot State Publisher node
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[{"robot_description": robot_description}]
     )
 
-    # Set Gazebo resource path so it finds meshes
-    gazebo_resource_path = SetEnvironmentVariable(
-        name='GZ_SIM_RESOURCE_PATH',
-        value=[str(Path(bumperbot_description_dir).parent.resolve())]
+    # Use the same gzserver setup as display.launch.py
+    gzserver = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(gazebo_ros, 'launch', 'gzserver.launch.py')),
+        launch_arguments={'extra_gazebo_args': ''}.items()
     )
 
-    # Launch Gazebo (gz sim) with empty world
-    gz_sim = IncludeLaunchDescription(
-    PythonLaunchDescriptionSource(
-        os.path.join(
-            get_package_share_directory("ros_gz_sim"),
-            "launch",
-            "gz_sim.launch.py")),
-    launch_arguments={
-        # ONE string, not a list
-        "gz_args": "-r -v 4 empty.sdf"
-    }.items()
-)
+    gzclient = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(gazebo_ros, 'launch', 'gzclient.launch.py'))
+    )
 
-
-    # Spawn robot from robot_description topic
-    gz_spawn_entity = Node(
-        package='ros_gz_sim',
-        executable='create',
-        output='screen',
-        arguments=[
-            '-topic', 'robot_description',
-            '-name', 'bumperbot'
-        ]
+    spawn_entity = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        name='spawn_entity',
+        arguments=['-entity', 'bumperbot',
+                   '-topic', 'robot_description',
+                   '-x', '0', '-y', '0', '-z', '1.0'],  # Spawn 1 meter high
+        output='screen'
     )
 
     return LaunchDescription([
         model_arg,
-        gazebo_resource_path,
         robot_state_publisher_node,
-        gz_sim,
-        gz_spawn_entity
+        gzserver,
+        gzclient,
+        spawn_entity
     ])
