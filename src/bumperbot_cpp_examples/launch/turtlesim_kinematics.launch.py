@@ -9,9 +9,9 @@ This script:
 """
 
 from launch import LaunchDescription
-from launch.actions import TimerAction, ExecuteProcess, DeclareLaunchArgument
+from launch.actions import TimerAction, DeclareLaunchArgument
 from launch_ros.actions import Node
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -32,17 +32,16 @@ def generate_launch_description() -> LaunchDescription:
     spawn_turtle2 = TimerAction(
         period=1.0,
         actions=[
-            ExecuteProcess(
-                cmd=[
-                    'ros2', 'service', 'call', '/spawn', 'turtlesim/srv/Spawn',
-                    PythonExpression([
-                        "'{x: '", ' + ', 'str(', LaunchConfiguration('x'), ')', ' + ',
-                        "', y: '", ' + ', 'str(', LaunchConfiguration('y'), ')', ' + ',
-                        "', theta: '", ' + ', 'str(', LaunchConfiguration('theta'), ')', ' + ',
-                        "', name: \"'", ' + ', LaunchConfiguration('name'), ' + ', "'\"}'"
-                    ])
+            Node(
+                package="bumperbot_cpp_examples",
+                executable="spawn_turtle.py",
+                name="spawn_turtle2_client",
+                arguments=[
+                    '--x', LaunchConfiguration('x'),
+                    '--y', LaunchConfiguration('y'),
+                    '--theta', LaunchConfiguration('theta'),
+                    '--name', LaunchConfiguration('name'),
                 ],
-                shell=False,
                 output="screen",
             )
         ],

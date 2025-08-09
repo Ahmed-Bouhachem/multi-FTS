@@ -18,6 +18,7 @@
   <depend>rcl_interfaces</depend>
   <depend>geometry_msgs</depend>
   <depend>turtlesim</depend>
+  <exec_depend>rclpy</exec_depend>
 
   <!-- Linting (optional) -->
   <test_depend>ament_lint_auto</test_depend>

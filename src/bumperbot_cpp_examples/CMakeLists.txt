@@ -51,4 +51,10 @@ install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch)
 
+# Install helper Python scripts as executables
+install(PROGRAMS
+  scripts/spawn_turtle.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
