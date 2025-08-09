@@ -63,3 +63,12 @@ Stop the turtlesim kinematics launch:
 ```bash
 bash scripts/stop_turtlesim_kinematics.sh
 ```
+
+Convenience run script (with background option):
+```bash
+# foreground
+bash scripts/run_turtlesim_kinematics.sh --x 8.0 --y 3.0 --theta 1.57 --name buddy
+
+# background with logs to log/turtlesim_launch.log
+bash scripts/run_turtlesim_kinematics.sh --background
+```
