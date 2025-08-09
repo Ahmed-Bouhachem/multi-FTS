@@ -35,25 +35,32 @@ void SimpleTurtlesimKinematics::turtle2PoseCallback(
   float Tx = last_turtle2_pose_.x - last_turtle1_pose_.x;
   float Ty = last_turtle2_pose_.y - last_turtle1_pose_.y;
 
-  // Euclidean distance between the two turtles
-  double dist = std::hypot(static_cast<double>(Tx), static_cast<double>(Ty));
-
-  // Relative heading delta (turtle2 heading minus turtle1 heading), normalized to [-pi, pi]
+  // Relative heading delta (turtle2 - turtle1), normalized to [-pi, pi]
   auto normalize = [](double a) {
     while (a > M_PI) a -= 2.0 * M_PI;
     while (a < -M_PI) a += 2.0 * M_PI;
     return a;
   };
-  double dtheta = normalize(static_cast<double>(last_turtle2_pose_.theta) -
-                            static_cast<double>(last_turtle1_pose_.theta));
+  double theta_rad = normalize(static_cast<double>(last_turtle2_pose_.theta) -
+                               static_cast<double>(last_turtle1_pose_.theta));
+  double theta_deg = theta_rad * 180.0 / M_PI;
+  double c = std::cos(theta_rad);
+  double s = std::sin(theta_rad);
 
-  // Log the translation components
+  // Also compute Euclidean distance between turtles
+  double dist = std::hypot(static_cast<double>(Tx), static_cast<double>(Ty));
+
+  // Log the translation and rotation components
   RCLCPP_INFO_STREAM(this->get_logger(),
                      "\nRelative Kinematics (turtle1 -> turtle2)\n"
                      << "Tx: " << Tx << "\n"
                      << "Ty: " << Ty << "\n"
                      << "Distance: " << dist << "\n"
-                     << "Delta theta (rad): " << dtheta << "\n");
+                     << "theta (rad): " << theta_rad << "\n"
+                     << "theta (deg): " << theta_deg << "\n"
+                     << "Rotation matrix Rz(theta):\n"
+                     << "| " << c << "\t" << -s << " |\n"
+                     << "| " << s << "\t" <<  c << " |\n");
 }
 
 // Standard ROS 2 C++ entry point
