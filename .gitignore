@@ -39,3 +39,4 @@ Makefile
 # Other common
 *.DS_Store
 *.out
+compile_commands.json
