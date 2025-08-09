@@ -58,3 +58,8 @@ Customize turtle2 spawn:
 ```bash
 ros2 launch bumperbot_cpp_examples turtlesim_kinematics.launch.py x:=8.0 y:=3.0 theta:=1.57 name:=buddy
 ```
+
+Stop the turtlesim kinematics launch:
+```bash
+bash scripts/stop_turtlesim_kinematics.sh
+```
