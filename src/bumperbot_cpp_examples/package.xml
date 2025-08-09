@@ -9,12 +9,17 @@
 
   <author email="bouha@todo.todo">Ahmed Bouhachem</author>
 
+  <!-- Build tool used by ROS 2 ament system -->
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <!-- Core runtime dependencies for the example nodes -->
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>rcl_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>turtlesim</depend>
 
+  <!-- Linting (optional) -->
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
