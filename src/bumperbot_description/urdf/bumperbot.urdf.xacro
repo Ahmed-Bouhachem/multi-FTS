@@ -3,6 +3,7 @@
 
   <!-- Include Gazebo Parameters -->
   <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_gazebo.xacro" />
+  <xacro:bumperbot_gazebo_props />
 
   <link name="base_footprint"/>
   

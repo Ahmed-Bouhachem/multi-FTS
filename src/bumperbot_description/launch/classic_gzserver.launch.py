@@ -14,7 +14,7 @@ def generate_launch_description():
         ExecuteProcess(
             cmd=[
                 'gzserver',
-                '/opt/ros/humble/share/gazebo_ros/worlds/empty.world',
+                '/usr/share/gazebo-11/worlds/empty.world',
                 '-s', 'libgazebo_ros_init.so',
                 '-s', 'libgazebo_ros_factory.so',
                 LaunchConfiguration('extra_gazebo_args')

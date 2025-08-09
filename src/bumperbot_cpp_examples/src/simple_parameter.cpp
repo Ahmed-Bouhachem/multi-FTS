@@ -1,19 +1,16 @@
-#include <rclcpp/rclcpp.hpp>  // corrected include
+// Cleaned up includes and comments; add <functional> for std::bind placeholders
+#include <rclcpp/rclcpp.hpp>
 #include <rcl_interfaces/msg/set_parameters_result.hpp>
 
+#include <functional>
 #include <string>
 #include <vector>
 
 using std::placeholders::_1;
 
-class SimpleParameter : public rclcpp::Node
-{
+class SimpleParameter : public rclcpp::Node {
 public:
-  // ❌ Wrong constructor name: SimpleParameterNode()
-  // ✅ Corrected:
-  SimpleParameter()
-  : Node("simple_parameter_node")
-  {
+  SimpleParameter() : Node("simple_parameter_node") {
     declare_parameter<int>("Simple_int_param", 28);
     declare_parameter<std::string>("Simple_string_param", "Ahmed");
 
@@ -24,11 +21,9 @@ public:
 
 private:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
-  // ❌ Missing `rclcpp::node_interfaces::` namespace
 
   rcl_interfaces::msg::SetParametersResult paramChangeCallback(
-    const std::vector<rclcpp::Parameter> &parameters)
-  {
+    const std::vector<rclcpp::Parameter> &parameters) {
     rcl_interfaces::msg::SetParametersResult result;
     result.successful = true;
 
@@ -44,10 +39,9 @@ private:
   }
 };
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<SimpleParameter>();  // ❌ You called SimpleParameter() but defined constructor as SimpleParameterNode()
+  auto node = std::make_shared<SimpleParameter>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

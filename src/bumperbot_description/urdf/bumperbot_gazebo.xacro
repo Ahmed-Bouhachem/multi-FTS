@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-
-<robot name="bumperbot" xmlns:xacro="http://www.ros.org/wiki/xacros">
-
-  <!-- Add material colors for visibility -->
+<!-- Gazebo-specific visuals and contact/friction parameters.
+     This file is included by xacro; do not wrap in a <robot> tag. -->
+<xacro:macro name="bumperbot_gazebo_props" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Colors for quick visual identification -->
   <gazebo reference="base_link">
     <material>Gazebo/Blue</material>
   </gazebo>
@@ -23,26 +23,28 @@
     <material>Gazebo/Red</material>
   </gazebo>
 
+  <!-- High friction on drive wheels to avoid slipping in simple worlds -->
   <gazebo reference="wheel_right_link">
-    <mu1>100000000000000.0</mu1>
-    <mu2>100000000000000.0</mu2>
-    <kp>1000000000000.0</kp>
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
     <kd>10.0</kd>
     <minDepth>0.001</minDepth>
     <maxVel>0.1</maxVel>
-    <fdirl>1 0 0</fdirl>
+    <fdir1>1 0 0</fdir1>
   </gazebo>
 
   <gazebo reference="wheel_left_link">
-    <mu1>100000000000000.0</mu1>
-    <mu2>100000000000000.0</mu2>
-    <kp>1000000000000.0</kp>
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
     <kd>10.0</kd>
     <minDepth>0.001</minDepth>
     <maxVel>0.1</maxVel>
-    <fdirl>1 0 0</fdirl>
+    <fdir1>1 0 0</fdir1>
   </gazebo>
 
+  <!-- Lower friction on casters so they slide/rotate easily -->
   <gazebo reference="caster_front_link">
     <mu1>0.1</mu1>
     <mu2>0.1</mu2>
@@ -60,11 +62,5 @@
     <minDepth>0.001</minDepth>
     <maxVel>0.1</maxVel>
   </gazebo>
- <!---
-  <gazebo>                  
-    <plugin name="gazebo_ros_factory" filename="libgazebo_ros_factory.so">    
-      <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
-    </plugin>
-  </gazebo>
-  -->
-</robot>
+</xacro:macro>
+ 
