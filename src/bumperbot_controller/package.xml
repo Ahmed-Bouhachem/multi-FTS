@@ -8,6 +8,8 @@
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>eigen3_cmake_module</build_depend>
+  <depend>eigen</depend>
 
   <!-- Runtime: config is consumed by controller_manager and gazebo_ros2_control -->
   <exec_depend>controller_manager</exec_depend>
