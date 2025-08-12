@@ -1,4 +1,4 @@
-#!/usr/bin/env python3  # Use Python 3 interpreter
+#!/usr/bin/env python3
 """
 Small helper to call turtlesim's /spawn service with arguments.  # Module docstring
 """

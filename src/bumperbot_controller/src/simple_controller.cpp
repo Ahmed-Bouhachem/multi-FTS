@@ -3,9 +3,6 @@
 namespace bumperbot_controller {
 
 Eigen::Vector2d SimpleController::compute(double v, double omega) const {
-  // Differential drive kinematics:
-  // v_left = v - (omega * track_width / 2)
-  // v_right = v + (omega * track_width / 2)
   const double half = 0.5 * track_width_;
   const double v_left = v - omega * half;
   const double v_right = v + omega * half;
@@ -13,4 +10,3 @@ Eigen::Vector2d SimpleController::compute(double v, double omega) const {
 }
 
 }  // namespace bumperbot_controller
-

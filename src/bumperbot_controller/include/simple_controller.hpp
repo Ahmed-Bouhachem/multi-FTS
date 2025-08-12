@@ -1,5 +1,6 @@
+
 #ifndef SIMPLE_CONTROLLER_HPP
-#define
+#define SIMPLE_CONTROLLER_HPPs
 
 #include<rclcpp/rclcpp.hpp>
 #include<geometry_msgs/msg/twist_stamped.hpp>
@@ -16,10 +17,10 @@ class SimpleController : public rclcpp :: Node {
         void velcallback(const geometry_msgs::msg::TwistStamped& msg);
 
         rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub;
-        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>SharedPtr Wheel_cmd_pub_;
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr Wheel_cmd_pub_;
 
         double wheel_radios_;
         double wheel_separation_;
-        Eigen::Matrix2d speed_conversion_
+        Eigen::Matrix2d speed_conversion_;
 };
 #endif
