@@ -40,8 +40,8 @@
       <p class="hint">Keyboard: arrows to drive, space to stop.</p>
     </div>
 
-    <!-- Socket.IO client served by Flask-SocketIO -->
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- Socket.IO v4 client from CDN to match Flask-SocketIO (python-socketio v5) -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
     <!-- Custom JS for event handlers and socket emits -->
     <script src="/static/main.js"></script>
   </body>

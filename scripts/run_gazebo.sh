@@ -45,7 +45,10 @@ if [[ ! -f install/setup.bash ]]; then
   exit 1
 fi
 
+# install/setup.bash may reference unset vars; temporarily relax nounset
+set +u
 source install/setup.bash || true
+set -u
 
 if $KILL; then
   pkill -f gzserver 2>/dev/null || true

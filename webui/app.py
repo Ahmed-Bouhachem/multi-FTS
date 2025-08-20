@@ -17,18 +17,19 @@ Design notes:
 - Uses threading async_mode to avoid extra dependencies (eventlet/gevent optional).
 - Publishes to /diff_drive_controller/cmd_vel by default (Gazebo diff drive).
 """
-
+import os
 import atexit
 import threading
 from dataclasses import dataclass  # Lightweight struct for velocity commands
 
-from flask import Flask, render_template  # Web app and template rendering
+from flask import Flask, render_template, redirect  # Web app and template rendering
 from flask_socketio import SocketIO       # WebSocket (Socket.IO) server
 
 # ROS 2
 import rclpy                      # ROS 2 Python client library
 from rclpy.node import Node       # Base class for ROS 2 nodes
-from geometry_msgs.msg import Twist  # Message type for velocity commands
+from geometry_msgs.msg import Twist, TwistStamped  # Message types for velocity commands
+USE_STAMPED_VEL = os.getenv("USE_STAMPED_VEL", "1").lower() in ("1", "true", "yes")
 
 
 @dataclass
@@ -39,27 +40,36 @@ class VelCmd:
 
 
 class RosBridge(Node):
-    """ROS 2 node that publishes Twist to common diff-drive controller topics.
-
-    Publishes to both /bumperbot_controller/cmd_vel and /diff_drive_controller/cmd_vel
-    so the UI works regardless of which controller name is active.
+    """ROS 2 node that publishes velocity to diff-drive controllers.
+    Publishes to both /bumperbot_controller/cmd_vel and /diff_drive_controller/cmd_vel.
     """
 
     def __init__(self):
-        # Initialize node with a deterministic name; single publisher only
         super().__init__('webui_cmd_vel_publisher')
-        # Create publishers for both common controller names
-        self.publishers = [
-            self.create_publisher(Twist, '/bumperbot_controller/cmd_vel', 10),
-            self.create_publisher(Twist, '/diff_drive_controller/cmd_vel', 10),
+
+        if USE_STAMPED_VEL:
+            msg_type = TwistStamped
+        else:
+            msg_type = Twist
+
+        self._publishers = [
+            self.create_publisher(msg_type, '/bumperbot_controller/cmd_vel', 10),
+            self.create_publisher(msg_type, '/diff_drive_controller/cmd_vel', 10),
         ]
 
     def publish_cmd(self, cmd: VelCmd) -> None:
-        """Publish a Twist using linear.x and angular.z components only."""
-        msg = Twist()
-        msg.linear.x = float(cmd.linear)
-        msg.angular.z = float(cmd.angular)
-        for pub in self.publishers:
+        if USE_STAMPED_VEL:
+            msg = TwistStamped()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            # optional: msg.header.frame_id = 'base_footprint'
+            msg.twist.linear.x = float(cmd.linear)
+            msg.twist.angular.z = float(cmd.angular)
+        else:
+            msg = Twist()
+            msg.linear.x = float(cmd.linear)
+            msg.angular.z = float(cmd.angular)
+
+        for pub in self._publishers:
             pub.publish(msg)
 
 
@@ -87,6 +97,16 @@ ros_node: RosBridge | None = None
 def index():
     """Serve the control page."""
     return render_template('index.html')
+
+
+@app.route('/socket.io/socket.io.js')
+def legacy_socketio_client_path():
+    """Redirect legacy client path to a CDN-hosted compatible Socket.IO v4 client.
+
+    Some older guides reference /socket.io/socket.io.js which Flask-SocketIO
+    does not serve. Redirecting avoids protocol/version mismatches.
+    """
+    return redirect('https://cdn.socket.io/4.7.5/socket.io.min.js', code=302)
 
 
 @socketio.on('connect')
