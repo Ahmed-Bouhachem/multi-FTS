@@ -90,7 +90,8 @@ def generate_launch_description():
             Node(
                 package='controller_manager',
                 executable='spawner',
-                arguments=['diff_drive_controller'],
+                # Match the controller name defined in bumperbot_controllers.yaml
+                arguments=['bumperbot_controller'],
                 output='screen'
             )
         ]
