@@ -1,4 +1,5 @@
 <?xml version="1.0"?>
+<!-- A single-box robot used for simple Gazebo spawn tests. -->
 <robot name="simple_test">
   <link name="base_link">
     <visual>

@@ -1,5 +1,13 @@
+"""
+Display the full bumperbot model in Gazebo (classic) using robot_state_publisher.
+
+This launch processes the main xacro into robot_description, starts gzserver/gzclient
+via gazebo_ros helper launches, spawns the robot, and supports a GUI toggle.
+"""
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
@@ -17,11 +25,18 @@ def generate_launch_description():
         description="Absolute path to the bumperbot URDF model file."
     )
 
+    gui_arg = DeclareLaunchArgument(
+        name='gui',
+        default_value='true',
+        description='Launch Gazebo client (GUI)' 
+    )
+
     robot_description = ParameterValue(
         Command(['xacro ', LaunchConfiguration('model')]),
         value_type=str
     )
 
+    # Publish robot_description and TF
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -37,9 +52,11 @@ def generate_launch_description():
 
     gzclient = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(gazebo_ros, 'launch', 'gzclient.launch.py'))
+            os.path.join(gazebo_ros, 'launch', 'gzclient.launch.py')),
+        condition=IfCondition(LaunchConfiguration('gui'))
     )
 
+    # Spawn the model into Gazebo (slight z offset to avoid ground penetration)
     spawn_entity = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
@@ -52,6 +69,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         model_arg,
+        gui_arg,
         robot_state_publisher_node,
         gzserver,
         gzclient,

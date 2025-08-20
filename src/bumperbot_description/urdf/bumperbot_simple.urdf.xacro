@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
+<!-- Minimal bumperbot with two drive wheels and ros2_control mock hardware. -->
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
+  <!-- Base footprint (map->base_footprint->base_link) -->
   <link name="base_footprint"/>
   
+  <!-- Main chassis -->
   <link name="base_link">
     <inertial>
       <origin xyz="0 0 0.04" rpy="0 0 0" />
@@ -22,13 +25,14 @@
     </collision>
   </link>
 
+  <!-- Fixed transform from base_footprint to base_link -->
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link" />
     <origin xyz="0 0 0.033" rpy="0 0 0"/>
   </joint>
 
-  <!-- Wheels as cylinders -->
+  <!-- Right wheel as a cylinder -->
   <link name="wheel_right_link">
     <visual>
       <geometry>
@@ -54,7 +58,7 @@
     <axis xyz="0 0 1" />
   </joint>
 
-  <!-- Left wheel -->
+  <!-- Left wheel as a cylinder -->
   <link name="wheel_left_link">
     <visual>
       <geometry>
@@ -80,6 +84,7 @@
     <axis xyz="0 0 1" />
   </joint>
 
+  <!-- ros2_control mock hardware + interfaces for wheel joints -->
   <ros2_control name="BumperBotSystem" type="system">
     <hardware>
       <plugin>mock_components/GenericSystem</plugin>
@@ -99,14 +104,12 @@
     </joint>
   </ros2_control>
 
-  <!-- Comment out gazebo plugin for now -->
-  <!--
+  <!-- Enable Gazebo ros2_control plugin so controllers drive the robot in sim -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
       <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
     </plugin>
   </gazebo>
-  -->
 
 
 

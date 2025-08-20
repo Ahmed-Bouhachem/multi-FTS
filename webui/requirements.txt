@@ -1,0 +1,9 @@
+# Flask web server
+flask>=2.3
+
+# Socket.IO server integration for Flask
+flask-socketio>=5.3
+python-socketio>=5.8
+
+# WebSocket transport (used by flask-socketio in threading mode)
+simple-websocket>=1.0

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Launch bumperbot in Gazebo (classic), with or without controllers/GUI.
+# Provides --background mode to run and log to file.
 set -euo pipefail
 
 show_help() {
@@ -74,4 +76,3 @@ else
   fi
   ros2 launch "$LAUNCH_PKG" "$LAUNCH_FILE"
 fi
-

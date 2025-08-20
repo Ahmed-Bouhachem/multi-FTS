@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(bumperbot_controller)
 
+# Enable common warnings in GCC/Clang
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -34,6 +35,7 @@ install(DIRECTORY config launch
 )
 
 if(BUILD_TESTING)
+  # ament linters (cpplint etc.)
   find_package(ament_lint_auto REQUIRED) 
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)

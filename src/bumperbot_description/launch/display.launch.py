@@ -1,3 +1,10 @@
+"""
+Display the bumperbot model only (no controllers), using classic Gazebo server.
+
+This launch publishes robot_description from xacro, starts classic gzserver and
+gzclient, and spawns the robot after a short delay to ensure Gazebo is ready.
+"""
+
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -18,6 +25,7 @@ def generate_launch_description():
         value_type=str
     )
 
+    # Publish robot_description and TF
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',

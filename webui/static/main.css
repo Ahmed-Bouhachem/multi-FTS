@@ -1,0 +1,21 @@
+/* Base page styling */
+body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0b1020; color: #e6edf3; }
+.container { max-width: 680px; margin: 40px auto; padding: 0 16px; }
+h1 { margin: 0 0 12px; font-weight: 600; }
+
+/* Control pad layout */
+.pad { display: grid; grid-template-rows: auto auto auto; gap: 12px; align-items: center; justify-items: center; margin-top: 16px; }
+.middle { display: grid; grid-template-columns: auto auto auto; gap: 12px; align-items: center; }
+
+/* Buttons */
+button { background: #1f6feb; color: white; border: none; padding: 14px 18px; border-radius: 10px; font-size: 20px; cursor: pointer; }
+button#btnStop { background: #f85149; }
+button:active { filter: brightness(0.9); }
+
+/* Sliders panel */
+.scales { display: grid; grid-template-columns: auto 60px; gap: 8px 12px; align-items: center; }
+.scales label { white-space: nowrap; }
+input[type="range"] { width: 320px; }
+
+/* Hints */
+.hint { color: #a3b1c2; font-size: 14px; }

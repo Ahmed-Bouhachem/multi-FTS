@@ -1,3 +1,10 @@
+"""
+Display the bumperbot model in RViz with a joint_state_publisher GUI.
+
+Publishes robot_description from xacro, starts joint_state_publisher_gui,
+and opens RViz with a preconfigured display.
+"""
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
@@ -17,7 +24,7 @@ def generate_launch_description():
         value_type=str
     )
 
-    # Robot State Publisher
+    # Robot State Publisher: publishes TF from robot_description
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -34,7 +41,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    # RViz
+    # RViz configuration and node
     rviz_config = os.path.join(pkg_bumper, 'rviz', 'display.rviz')
     rviz = Node(
         package='rviz2',

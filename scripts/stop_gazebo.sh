@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Stop a Gazebo run started by scripts/run_gazebo.sh, if running.
 set -euo pipefail
 
 if [[ -f log/gazebo_run.pid ]]; then
@@ -14,4 +15,3 @@ echo "Killing any remaining Gazebo processes..."
 pkill -f gzserver 2>/dev/null || true
 pkill -f gzclient 2>/dev/null || true
 echo "Done."
-

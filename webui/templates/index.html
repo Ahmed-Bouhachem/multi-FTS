@@ -1,0 +1,48 @@
+<!--
+  Simple teleop UI for BumperBot using Socket.IO.
+  - Sliders control magnitudes for linear and angular speeds
+  - Buttons and arrow keys send cmd_vel events to the server
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BumperBot Web UI</title>
+    <!-- Styling for layout and colors -->
+    <link rel="stylesheet" href="/static/main.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>BumperBot Web UI</h1>
+      <!-- Brief usage instructions -->
+      <p>Use the buttons or arrow keys to drive. Speed scales set linear/angular.</p>
+
+      <!-- Speed scale sliders for linear and angular velocity magnitudes -->
+      <div class="scales">
+        <label>Linear (m/s): <input id="lin" type="range" min="0" max="1.0" step="0.05" value="0.3" /></label>
+        <span id="linVal">0.30</span>
+        <label>Angular (rad/s): <input id="ang" type="range" min="0" max="2.0" step="0.1" value="1.0" /></label>
+        <span id="angVal">1.00</span>
+      </div>
+
+      <!-- Directional pad for forward/backward/left/right and stop -->
+      <div class="pad">
+        <button id="btnUp">↑</button>
+        <div class="middle">
+          <button id="btnLeft">←</button>
+          <button id="btnStop">■</button>
+          <button id="btnRight">→</button>
+        </div>
+        <button id="btnDown">↓</button>
+      </div>
+
+      <p class="hint">Keyboard: arrows to drive, space to stop.</p>
+    </div>
+
+    <!-- Socket.IO client served by Flask-SocketIO -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Custom JS for event handlers and socket emits -->
+    <script src="/static/main.js"></script>
+  </body>
+  </html>

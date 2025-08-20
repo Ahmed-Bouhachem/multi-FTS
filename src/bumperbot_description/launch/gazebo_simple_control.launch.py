@@ -1,5 +1,17 @@
+"""
+Spawn the simple bumperbot with ros2_control in classic Gazebo and start controllers.
+
+This launch:
+- Processes a minimal URDF with ros2_control and publishes robot_description
+- Starts gzserver (headless) and optionally gzclient
+- Spawns the robot into Gazebo
+- Spawns joint_state_broadcaster and diff_drive_controller
+"""
+
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, TimerAction
+from launch.actions import ExecuteProcess, TimerAction, DeclareLaunchArgument
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.substitutions import Command
 from launch_ros.parameter_descriptions import ParameterValue
@@ -20,7 +32,14 @@ def generate_launch_description():
     # Controller configuration
     controller_config = os.path.join(controller_dir, 'config', 'bumperbot_controllers.yaml')
 
-    # Gazebo server with ROS plugins
+    # GUI toggle
+    gui_arg = DeclareLaunchArgument(
+        name='gui',
+        default_value='true',
+        description='Launch Gazebo client (GUI)'
+    )
+
+    # Gazebo server with ROS plugins (factory for spawn, init for ROS clock)
     gzserver = ExecuteProcess(
         cmd=[
             'gzserver', '--verbose',
@@ -31,22 +50,21 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Robot state publisher
+    gzclient = ExecuteProcess(
+        condition=IfCondition(LaunchConfiguration('gui')),
+        cmd=['gzclient'],
+        output='screen'
+    )
+
+    # Robot state publisher (publishes TF using robot_description)
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[{"robot_description": robot_description}]
     )
 
-    # Controller manager
-    controller_manager = Node(
-        package='controller_manager',
-        executable='ros2_control_node',
-        parameters=[{"robot_description": robot_description}, controller_config],
-        output='screen'
-    )
 
-    # Spawn robot after delay
+    # Spawn robot after a short delay to ensure Gazebo is ready
     spawn_entity = TimerAction(
         period=3.0,
         actions=[
@@ -79,9 +97,10 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        gui_arg,
         gzserver,
+        gzclient,
         robot_state_publisher,
-        controller_manager,
         spawn_entity,
         start_controllers
     ])

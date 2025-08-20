@@ -1,3 +1,9 @@
+"""
+Spawn a very simple URDF (test_simple.urdf) into classic Gazebo.
+
+This launch is useful for verifying Gazebo integration without full xacro.
+"""
+
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource

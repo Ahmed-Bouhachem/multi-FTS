@@ -1,3 +1,9 @@
+"""
+Start classic Gazebo server (gzserver) with ROS factory/init plugins.
+
+This is a small helper launch included by other launch files.
+"""
+
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
