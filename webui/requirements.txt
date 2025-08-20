@@ -7,3 +7,10 @@ python-socketio>=5.8
 
 # WebSocket transport (used by flask-socketio in threading mode)
 simple-websocket>=1.0
+
+# ROS Python messages commonly require numpy at runtime
+numpy>=1.23
+
+# Silence resolver warnings from ROS tooling dependencies
+pyyaml>=6.0
+typeguard>=2.13
