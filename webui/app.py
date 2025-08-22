@@ -22,7 +22,7 @@ import atexit
 import threading
 from dataclasses import dataclass  # Lightweight struct for velocity commands
 
-from flask import Flask, render_template, redirect  # Web app and template rendering
+from flask import Flask, render_template, redirect, request  # Web app and template rendering
 from flask_socketio import SocketIO       # WebSocket (Socket.IO) server
 
 # ROS 2
@@ -109,6 +109,24 @@ def legacy_socketio_client_path():
     return redirect('https://cdn.socket.io/4.7.5/socket.io.min.js', code=302)
 
 
+@app.get('/api/cmd')
+def http_cmd():
+    """HTTP fallback to send a single cmd_vel without Socket.IO.
+
+    Example: /api/cmd?linear=0.3&angular=1.0
+    """
+    try:
+        lin = float(request.args.get('linear', '0') or 0)
+        ang = float(request.args.get('angular', '0') or 0)
+    except Exception:
+        lin = 0.0
+        ang = 0.0
+    app.logger.info(f"http cmd linear={lin} angular={ang}")
+    if ros_node is not None:
+        ros_node.publish_cmd(VelCmd(lin, ang))
+    return {'ok': True, 'linear': lin, 'angular': ang}
+
+
 @socketio.on('connect')
 def on_connect():
     """Log connection; could emit initial state here if needed."""
@@ -127,6 +145,7 @@ def on_cmd_vel(data):
     try:
         lin = float(data.get('linear', 0.0))
         ang = float(data.get('angular', 0.0))
+        app.logger.info(f"socketio cmd_vel linear={lin} angular={ang}")
         if ros_node is not None:
             ros_node.publish_cmd(VelCmd(lin, ang))
     except Exception as e:
