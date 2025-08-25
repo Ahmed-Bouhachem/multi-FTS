@@ -7,42 +7,70 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- Responsive design: scales page on phones/tablets too -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BumperBot Web UI</title>
-    <!-- Styling for layout and colors -->
+
+    <!-- External CSS file with styles (colors, layout, fonts, etc.).
+         Flask serves this file from your /static folder. -->
     <link rel="stylesheet" href="/static/main.css" />
   </head>
   <body>
     <div class="container">
       <h1>BumperBot Web UI</h1>
-      <!-- Brief usage instructions -->
+      <!-- Quick description so the user knows how to use the interface -->
       <p>Use the buttons or arrow keys to drive. Speed scales set linear/angular.</p>
 
-      <!-- Speed scale sliders for linear and angular velocity magnitudes -->
+      <!-- === Sliders to adjust velocity magnitudes === -->
       <div class="scales">
-        <label>Linear (m/s): <input id="lin" type="range" min="0" max="1.0" step="0.05" value="0.3" /></label>
+        <!-- Linear velocity slider: 0 to 1.0 m/s, default 0.3 -->
+        <label>
+          Linear (m/s):
+          <input id="lin" type="range" min="0" max="1.0" step="0.05" value="0.3" />
+        </label>
+        <!-- Live display of the slider value -->
         <span id="linVal">0.30</span>
-        <label>Angular (rad/s): <input id="ang" type="range" min="0" max="2.0" step="0.1" value="1.0" /></label>
+
+        <!-- Angular velocity slider: 0 to 2.0 rad/s, default 1.0 -->
+        <label>
+          Angular (rad/s):
+          <input id="ang" type="range" min="0" max="2.0" step="0.1" value="1.0" />
+        </label>
+        <!-- Live display of the slider value -->
         <span id="angVal">1.00</span>
       </div>
 
-      <!-- Directional pad for forward/backward/left/right and stop -->
+      <!-- === Directional pad === -->
+      <!-- Each button will be hooked in JS to send a socket event with a velocity command -->
       <div class="pad">
+        <!-- Forward -->
         <button id="btnUp">↑</button>
         <div class="middle">
+          <!-- Left turn -->
           <button id="btnLeft">←</button>
+          <!-- Stop -->
           <button id="btnStop">■</button>
+          <!-- Right turn -->
           <button id="btnRight">→</button>
         </div>
+        <!-- Backward -->
         <button id="btnDown">↓</button>
       </div>
 
+      <!-- Hint for keyboard controls (JS will capture arrow keys & space bar) -->
       <p class="hint">Keyboard: arrows to drive, space to stop.</p>
     </div>
 
-    <!-- Socket.IO v4 client from CDN to match Flask-SocketIO (python-socketio v5) -->
+    <!-- === Scripts === -->
+    <!-- Socket.IO v4 client JS (must match Flask-SocketIO protocol version).
+         Loaded from CDN to simplify setup. -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-    <!-- Custom JS for event handlers and socket emits -->
+
+    <!-- Custom JavaScript with all the logic:
+         - Reads slider values
+         - Attaches button/keyboard listeners
+         - Opens a Socket.IO connection to the Flask server
+         - Sends {linear, angular} commands via 'cmd_vel' events -->
     <script src="/static/main.js"></script>
   </body>
-  </html>
+</html>
