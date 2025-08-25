@@ -24,9 +24,12 @@ def generate_launch_description():
     
     # Use the simple URDF with ros2_control
     xacro_file = os.path.join(pkg_dir, 'urdf', 'bumperbot_simple.urdf.xacro')
-    robot_description = ParameterValue(
-        Command(['xacro ', xacro_file]),
-        value_type=str
+    robot_description = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
+    # Also render URDF to a file to avoid passing huge XML via CLI params
+    generated_urdf = os.path.join(os.getenv('TMPDIR', '/tmp'), 'bumperbot_simple.urdf')
+    gen_urdf_proc = ExecuteProcess(
+        cmd=['bash', '-lc', f'xacro "{xacro_file}" > "{generated_urdf}"'],
+        output='screen'
     )
 
     # Controller configuration
@@ -47,6 +50,7 @@ def generate_launch_description():
             '-s', 'libgazebo_ros_init.so',
             '-s', 'libgazebo_ros_factory.so'
         ],
+        additional_env={'RCL_ASSERT_ARGUMENTS': '0'},
         output='screen'
     )
 
@@ -71,7 +75,8 @@ def generate_launch_description():
             Node(
                 package='gazebo_ros',
                 executable='spawn_entity.py',
-                arguments=['-entity', 'bumperbot_simple', '-topic', 'robot_description', '-z', '1.0'],
+                # Spawn from file to avoid long parameter overrides on CLI
+                arguments=['-entity', 'bumperbot_simple', '-file', generated_urdf, '-z', '0.05'],
                 output='screen'
             )
         ]
@@ -99,6 +104,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         gui_arg,
+        gen_urdf_proc,
         gzserver,
         gzclient,
         robot_state_publisher,

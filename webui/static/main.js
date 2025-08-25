@@ -19,13 +19,13 @@ let curAng = 0.0;
 // Format numbers and emit a cmd_vel payload to the server
 function fmt(n) { return (+n).toFixed(2); }
 function send(linear, angular) {
-  // Prefer Socket.IO when connected
+  // Prefer Socket.IO when connected; otherwise use HTTP fallback
   if (socket && socket.connected) {
     try { socket.emit('cmd_vel', { linear, angular }); } catch (e) {}
+  } else {
+    const params = new URLSearchParams({ linear, angular });
+    fetch(`/api/cmd?${params.toString()}`).catch(() => {});
   }
-  // Always hit HTTP fallback as well to ensure delivery
-  const params = new URLSearchParams({ linear, angular });
-  fetch(`/api/cmd?${params.toString()}`).catch(() => {});
 }
 
 // Update slider readouts

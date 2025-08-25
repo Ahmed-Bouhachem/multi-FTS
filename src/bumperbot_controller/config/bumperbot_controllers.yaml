@@ -23,7 +23,7 @@ simple_velocity_controller:
 
 bumperbot_controller:
   ros__parameters:
-    use_stamped_vel: true
+    use_stamped_vel: false
     left_wheel_names:  ['wheel_left_joint']
     right_wheel_names: ['wheel_right_joint']
 
@@ -34,6 +34,7 @@ bumperbot_controller:
     twist_covariance_diagonal: [0.001, 0.001, 1.0e-3, 1.0e-3, 1.0e-3, 0.01]
 
     wheel_radius: 0.033
+    # Matches wheel joint Y offsets of +/- 0.07 m in bumperbot_simple.urdf.xacro
     wheel_separation: 0.17
     left_wheel_radius_multiplier: 1.0
     right_wheel_radius_multiplier: 1.0

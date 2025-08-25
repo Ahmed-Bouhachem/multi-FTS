@@ -40,3 +40,4 @@ Makefile
 *.DS_Store
 *.out
 compile_commands.json
+.venv/

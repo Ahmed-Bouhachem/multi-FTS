@@ -13,12 +13,14 @@
       <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02" />
     </inertial>
     <visual>
+      <origin xyz="0 0 0.04" rpy="0 0 0" />
       <geometry>
         <box size="0.2 0.15 0.08"/>
       </geometry>
       <material name="blue"><color rgba="0 0 1 1"/></material>
     </visual>
     <collision>
+      <origin xyz="0 0 0.04" rpy="0 0 0" />
       <geometry>
         <box size="0.2 0.15 0.08"/>
       </geometry>
@@ -58,6 +60,17 @@
     <axis xyz="0 0 1" />
   </joint>
 
+  <!-- Gazebo contact/friction for right wheel to ensure traction -->
+  <gazebo reference="wheel_right_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>10.0</kd>
+    <minDepth>0.001</minDepth>
+    <maxVel>0.1</maxVel>
+    <fdir1>1 0 0</fdir1>
+  </gazebo>
+
   <!-- Left wheel as a cylinder -->
   <link name="wheel_left_link">
     <visual>
@@ -83,6 +96,17 @@
     <child link="wheel_left_link" />
     <axis xyz="0 0 1" />
   </joint>
+
+  <!-- Gazebo contact/friction for left wheel to ensure traction -->
+  <gazebo reference="wheel_left_link">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>1000000.0</kp>
+    <kd>10.0</kd>
+    <minDepth>0.001</minDepth>
+    <maxVel>0.1</maxVel>
+    <fdir1>1 0 0</fdir1>
+  </gazebo>
 
   <!-- ros2_control hardware + interfaces for wheel joints (Gazebo integration) -->
   <ros2_control name="BumperBotSystem" type="system">

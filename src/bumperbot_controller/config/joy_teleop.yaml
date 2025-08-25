@@ -3,7 +3,7 @@ joy_teleop:
     move:
       type: topic
       interface_type: geometry_msgs/msg/Twist
-      topic_name: /diff_drive_controller/cmd_vel_unstamped
+      topic_name: /bumperbot_controller/cmd_vel_unstamped
 
       deadman_buttons: [5]
 

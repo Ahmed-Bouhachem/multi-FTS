@@ -3,7 +3,7 @@
 Flask + Socket.IO web UI to teleoperate the robot via ROS 2.
 
 Events:
-- 'cmd_vel': {linear: float (m/s), angular: float (rad/s)} → publish Twist
+- 'cmd_vel': {linear: float (m/s), angular: float (rad/s)} → publish Twist/TwistStamped
 
 Usage:
   source /opt/ros/humble/setup.bash
@@ -15,7 +15,7 @@ Then open http://localhost:5000
 Design notes:
 - Runs rclpy in a background thread so Flask's main thread can handle Socket.IO.
 - Uses threading async_mode to avoid extra dependencies (eventlet/gevent optional).
-- Publishes to /diff_drive_controller/cmd_vel by default (Gazebo diff drive).
+- Publishes to /bumperbot_controller/cmd_vel_unstamped by default to match YAML.
 """
 import os
 import atexit
@@ -29,7 +29,8 @@ from flask_socketio import SocketIO       # WebSocket (Socket.IO) server
 import rclpy                      # ROS 2 Python client library
 from rclpy.node import Node       # Base class for ROS 2 nodes
 from geometry_msgs.msg import Twist, TwistStamped  # Message types for velocity commands
-USE_STAMPED_VEL = os.getenv("USE_STAMPED_VEL", "1").lower() in ("1", "true", "yes")
+# Default to unstamped to match controller YAML (use_stamped_vel: false)
+USE_STAMPED_VEL = os.getenv("USE_STAMPED_VEL", "0").lower() in ("1", "true", "yes")
 
 
 @dataclass
@@ -40,8 +41,8 @@ class VelCmd:
 
 
 class RosBridge(Node):
-    """ROS 2 node that publishes velocity to diff-drive controllers.
-    Publishes to both /bumperbot_controller/cmd_vel and /diff_drive_controller/cmd_vel.
+    """ROS 2 node that publishes velocity to the active diff-drive controller.
+    Targets bumperbot_controller topics and matches stamped/unstamped setting.
     """
 
     def __init__(self):
@@ -49,13 +50,12 @@ class RosBridge(Node):
 
         if USE_STAMPED_VEL:
             msg_type = TwistStamped
+            topics = ['/bumperbot_controller/cmd_vel']
         else:
             msg_type = Twist
+            topics = ['/bumperbot_controller/cmd_vel_unstamped']
 
-        self._publishers = [
-            self.create_publisher(msg_type, '/bumperbot_controller/cmd_vel', 10),
-            self.create_publisher(msg_type, '/diff_drive_controller/cmd_vel', 10),
-        ]
+        self._publishers = [self.create_publisher(msg_type, t, 10) for t in topics]
 
     def publish_cmd(self, cmd: VelCmd) -> None:
         if USE_STAMPED_VEL:
