@@ -65,14 +65,15 @@ class RosBridge(Node):
         # Remember the mode (stamped vs unstamped) as a flag on the node.
         self._use_stamped = USE_STAMPED_VEL
 
-        # Choose message type and topic name. Both modes use the same topic
-        # (/bumperbot_controller/cmd_vel), only the message type differs.
+        # Choose message type and topic name to match diff_drive_controller:
+        # - Stamped: geometry_msgs/TwistStamped on /bumperbot_controller/cmd_vel
+        # - Unstamped: geometry_msgs/Twist on /bumperbot_controller/cmd_vel_unstamped
         if self._use_stamped:
             msg_type = TwistStamped
             topic = '/bumperbot_controller/cmd_vel'
         else:
             msg_type = Twist
-            topic = '/bumperbot_controller/cmd_vel'  # important: no "_unstamped"
+            topic = '/bumperbot_controller/cmd_vel_unstamped'
 
         # Create the ROS 2 publisher with queue size 10 (depth of outgoing messages).
         self._publisher = self.create_publisher(msg_type, topic, 10)
