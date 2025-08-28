@@ -18,6 +18,75 @@ ros2 topic pub /diff_drive_controller/cmd_vel geometry_msgs/msg/Twist \
   "linear: {x: 0.5} angular: {z: 0.2}" --rate 10
 ```
 
+## Quick Start Cheatsheet
+
+```bash
+# 1) Source and build
+source /opt/ros/humble/setup.bash
+colcon build
+source install/setup.bash
+
+# 2) Start simulation + controllers (Gazebo Classic)
+ros2 launch bumperbot_description gazebo_simple_control.launch.py
+
+# 3) Start Web UI teleop (publishes cmd_vel)
+bash scripts/run_web_ui.sh
+
+# 4) Visualize in RViz (preconfigured)
+rviz2 -d $(ros2 pkg prefix bumperbot_description)/share/bumperbot_description/rviz/display.rviz
+```
+
+## Web UI Teleop (cmd_vel)
+
+The Web UI publishes velocity commands to the diff drive controller.
+
+- Default (unstamped): publishes `geometry_msgs/msg/Twist` to `/bumperbot_controller/cmd_vel_unstamped`.
+- Stamped mode: set `USE_STAMPED_VEL=1` to publish `geometry_msgs/msg/TwistStamped` to `/bumperbot_controller/cmd_vel`.
+
+Run it quickly:
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+bash scripts/run_web_ui.sh                # starts http://localhost:5000
+# optional stamped mode
+# USE_STAMPED_VEL=1 bash scripts/run_web_ui.sh
+```
+
+Debug topics while moving the on‑screen joystick:
+```bash
+# Unstamped (default)
+ros2 topic echo /bumperbot_controller/cmd_vel_unstamped
+
+# Stamped mode
+ros2 topic echo /bumperbot_controller/cmd_vel geometry_msgs/msg/TwistStamped
+```
+
+## Visualizing in RViz2
+
+Make sure a model publisher is running, then open RViz2.
+
+```bash
+# Model only (no controllers)
+ros2 launch bumperbot_description display.launch.py
+
+# Or full sim + controllers
+ros2 launch bumperbot_description gazebo_simple_control.launch.py
+
+# RViz with preconfigured view
+rviz2 -d $(ros2 pkg prefix bumperbot_description)/share/bumperbot_description/rviz/display.rviz
+```
+
+If you open plain `rviz2`, set:
+- Fixed Frame: `base_footprint` (or `base_link`)
+- Add displays: TF and RobotModel (Topic: `/robot_description`)
+
+Quick checks:
+```bash
+ros2 topic list | egrep -x '/robot_description|/tf|/tf_static'
+ros2 node list | grep robot_state_publisher
+ros2 topic echo -n1 /tf_static
+```
+
 ## Project Structure
 - `src/bumperbot_description/`: Robot URDF and launch files
 - `src/bumperbot_controller/`: ros2_control configuration
@@ -83,6 +152,17 @@ bash scripts/run_turtlesim_kinematics.sh --x 8.0 --y 3.0 --theta 1.57 --name bud
 
 # background with logs to log/turtlesim_launch.log
 bash scripts/run_turtlesim_kinematics.sh --background
+```
+
+## Git: Push Your Changes
+
+Use the standard Git flow to push updates (including doc changes) to GitHub.
+
+```bash
+git status
+git add -A
+git commit -m "Update docs and configs"
+git push origin main
 ```
 
 ## Dependencies (ROS 2 Humble on Ubuntu)

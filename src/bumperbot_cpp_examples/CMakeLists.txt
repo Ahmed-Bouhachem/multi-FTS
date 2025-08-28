@@ -17,6 +17,8 @@ find_package(rcl_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(turtlesim REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(bumperbot_msgs REQUIRED)
+
 
 # --- Executables that contain a main() ---
 add_executable(simple_publisher src/simple_publisher.cpp)
@@ -29,6 +31,7 @@ add_executable(simple_parameter src/simple_parameter.cpp)
 ament_target_dependencies(simple_parameter rclcpp std_msgs rcl_interfaces)
 
 add_executable(simple_tf_kinematics src/simple_tf_kinematics.cpp)
+
 target_include_directories(simple_tf_kinematics PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
@@ -41,6 +44,10 @@ target_include_directories(simple_turtlesim_kinematics PUBLIC
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(simple_turtlesim_kinematics rclcpp geometry_msgs turtlesim)
 
+# --- Service server example ---
+add_executable(simple_service_server src/simple_service_server.cpp)
+ament_target_dependencies(simple_service_server rclcpp bumperbot_msgs)
+
 # Install binaries so they can be launched with `ros2 run`
 install(TARGETS
   simple_publisher
@@ -48,6 +55,7 @@ install(TARGETS
   simple_parameter
   simple_turtlesim_kinematics
   simple_tf_kinematics
+  simple_service_server
   DESTINATION lib/${PROJECT_NAME}
 )
 
