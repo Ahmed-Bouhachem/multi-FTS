@@ -21,7 +21,7 @@ class SimpleServiceServer : public rclcpp::Node {
         void serviceCallback(std::shared_ptr<bumperbot_msgs::srv::AddTwoInts::Request> req,
                             std::shared_ptr<bumperbot_msgs::srv::AddTwoInts::Response> res) 
         {
-            RCLCPP_INFO_STREAM(get_logger(), "New Request received a : " << req->a << "b:" << req->b);
+            RCLCPP_INFO_STREAM(get_logger(), "New Request received a : " << req->a << " b :" << req->b);
             res->sum = req->a + req->b;
             RCLCPP_INFO_STREAM(get_logger(), "response sum :" << res->sum);
         };

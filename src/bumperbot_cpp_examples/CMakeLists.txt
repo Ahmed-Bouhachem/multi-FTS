@@ -47,6 +47,8 @@ ament_target_dependencies(simple_turtlesim_kinematics rclcpp geometry_msgs turtl
 # --- Service server example ---
 add_executable(simple_service_server src/simple_service_server.cpp)
 ament_target_dependencies(simple_service_server rclcpp bumperbot_msgs)
+add_executable(simple_service_client src/simple_service_client.cpp)
+ament_target_dependencies(simple_service_client rclcpp bumperbot_msgs)
 
 # Install binaries so they can be launched with `ros2 run`
 install(TARGETS
@@ -56,6 +58,7 @@ install(TARGETS
   simple_turtlesim_kinematics
   simple_tf_kinematics
   simple_service_server
+  simple_service_client
   DESTINATION lib/${PROJECT_NAME}
 )
 
