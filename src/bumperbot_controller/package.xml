@@ -1,22 +1,27 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>bumperbot_controller</name>
-  <version>0.1.0</version>
-  <description>Controller configurations for BumperBot (ros2_control, diff drive).</description>
-  <maintainer email="bouhachem.ahmed@outlook.com">Ahmed Bouhachem</maintainer>
-  <license>MIT</license>
+  <version>0.0.0</version>
+  <description>Simple controller for the Bumperbot differential drive robot.</description>
 
+  <maintainer email="bouhachem.ahmed@outlook.com">Alien</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Build tools -->
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <build_depend>eigen3_cmake_module</build_depend>
+
+  <!-- Runtime dependencies -->
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+
+  <!-- Core dependencies -->
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>eigen</depend>
 
-  <!-- Runtime: config is consumed by controller_manager and gazebo_ros2_control -->
-  <exec_depend>controller_manager</exec_depend>
-  <exec_depend>ros2_controllers</exec_depend>
-  <exec_depend>joy</exec_depend>
-  <exec_depend>joy_teleop</exec_depend>
-
+  <!-- Testing -->
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

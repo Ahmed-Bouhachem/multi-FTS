@@ -1,10 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <!-- flag forwarded from parent xacro -->
-
-  <!-- Temporarily comment out the entire ros2_control section -->
-  <!--
+  
   <ros2_control name="BumperBotSystem" type="system">
     <hardware>
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
@@ -22,10 +19,8 @@
       <state_interface   name="velocity"/>
     </joint>
   </ros2_control>
-  -->
   
-  <!-- Temporarily comment out the gazebo plugin -->
-  <!--
+  
   <gazebo>
     <plugin name="gazebo_ros2_control"
             filename="libgazebo_ros2_control.so">
@@ -34,5 +29,5 @@
       </parameters>
     </plugin>
   </gazebo>
-  -->
+  
 </robot>
