@@ -1,4 +1,10 @@
 <?xml version="1.0"?>
+<!--
+  Bumperbot URDF (xacro): describes a simple differential drive robot base with two drive wheels
+  and two caster wheels. Visuals reference STL meshes packaged under bumperbot_description/meshes.
+
+  Gazebo classic tags adjust materials and contact properties for reasonable behavior in simulation.
+-->
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
   <!-- Gazebo-specific visuals and contact/friction parameters (inlined) -->

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(bumperbot_cpp_examples)
 
+# Build a set of small C++ examples (pub/sub, parameters, services) and TF demos.
+
 # Enable common warning flags for GCC/Clang builds
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -22,15 +24,19 @@ find_package(bumperbot_msgs REQUIRED)
 
 
 # --- Executables that contain a main() ---
+# Simple string publisher
 add_executable(simple_publisher src/simple_publisher.cpp)
 ament_target_dependencies(simple_publisher rclcpp std_msgs)
 
+# Simple string subscriber
 add_executable(simple_subscriber src/simple_subscriber.cpp)
 ament_target_dependencies(simple_subscriber rclcpp std_msgs)
 
+# Demonstrate declaring and handling parameters
 add_executable(simple_parameter src/simple_parameter.cpp)
 ament_target_dependencies(simple_parameter rclcpp std_msgs rcl_interfaces)
 
+# TF demo: static + dynamic transforms and a query service
 add_executable(simple_tf_kinematics src/simple_tf_kinematics.cpp)
 
 target_include_directories(simple_tf_kinematics PUBLIC

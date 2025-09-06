@@ -1,7 +1,12 @@
+// Implementation for the SimpleTfKinematics example node.
+// - Publishes a static transform (bumperbot_base -> bumperbot_top)
+// - Publishes a dynamic transform (odom -> bumperbot_base) that moves in x and rotates back-and-forth
+// - Provides a service /get_transform that returns a TransformStamped via TF lookup
 #include "bumperbot_cpp_examples/simple_tf_kinematics.hpp"
 using namespace std::chrono_literals;
 
 
+// Constructor: set up broadcasters, TF buffer/listener, static transform and timer/service.
 SimpleTfKinematics::SimpleTfKinematics(const std::string &name) : 
     Node(name) 
     , x_increment_(0.05)
@@ -28,12 +33,14 @@ SimpleTfKinematics::SimpleTfKinematics(const std::string &name) :
     static_transfrom_stamped_.transform.rotation.w = 1.0;
 
 
+    // Publish the static transform once
     static_tf_broadcaster_->sendTransform(static_transfrom_stamped_);
 
 
     RCLCPP_INFO_STREAM(get_logger(), "Publishing static transform between" <<
         static_transfrom_stamped_.header.frame_id << " and " <<static_transfrom_stamped_.child_frame_id);
 
+    // Publish the dynamic transform at 10 Hz
     timer_ = create_wall_timer(0.1s, std::bind(&SimpleTfKinematics::timerCallback, this));
 
     get_transform_srv_ = create_service<bumperbot_msgs::srv::GetTransform>("get_transform",
@@ -43,6 +50,7 @@ SimpleTfKinematics::SimpleTfKinematics(const std::string &name) :
     orientation_increment_.setRPY(0, 0, 0.05);
 
  }
+// Periodic callback to update and broadcast the moving transform.
 void SimpleTfKinematics::timerCallback() {
         dynamic_transfrom_stamped_.header.stamp = get_clock()->now();
         dynamic_transfrom_stamped_.header.frame_id = "odom";
@@ -58,6 +66,7 @@ void SimpleTfKinematics::timerCallback() {
         dynamic_transfrom_stamped_.transform.rotation.z = q.z();
         dynamic_transfrom_stamped_.transform.rotation.w = q.w();
 
+        // Publish dynamic transform after updating pose/orientation
         dynamic_tf_broadcaster_->sendTransform(dynamic_transfrom_stamped_);
 
         last_x_ = dynamic_transfrom_stamped_.transform.translation.x;
@@ -71,6 +80,7 @@ void SimpleTfKinematics::timerCallback() {
         }
 }
 
+// Service handler: look up a transform between requested frames at time 0 (latest available).
 void SimpleTfKinematics::getTransformCallback(std::shared_ptr<bumperbot_msgs::srv::GetTransform::Request> req,
                         std::shared_ptr<bumperbot_msgs::srv::GetTransform::Response> res)
 {

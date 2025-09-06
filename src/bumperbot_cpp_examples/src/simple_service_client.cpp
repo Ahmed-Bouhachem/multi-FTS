@@ -1,7 +1,8 @@
+// Minimal service client example: calls AddTwoInts with CLI-provided integers.
 #include <rclcpp/rclcpp.hpp>
 #include <bumperbot_msgs/srv/add_two_ints.hpp>
-#include<chrono>
-#include<memory>
+#include <chrono>
+#include <memory>
 using namespace std::placeholders;
 
 class SimpleServiceClient : public rclcpp::Node {
@@ -24,13 +25,17 @@ class SimpleServiceClient : public rclcpp::Node {
                 }
                 RCLCPP_INFO(get_logger(), "Service not available, waiting again...");
             }
-            auto result = client_->async_send_request(request, std::bind(&SimpleServiceClient::responseCallback, this, _1));
+            // Dispatch request asynchronously and bind response handler
+            auto result = client_->async_send_request(
+                request,
+                std::bind(&SimpleServiceClient::responseCallback, this, _1));
         }
 
     
     private:
         rclcpp::Client<bumperbot_msgs::srv::AddTwoInts>::SharedPtr client_;
 
+        // Handle service response (or failure)
         void responseCallback(rclcpp::Client<bumperbot_msgs::srv::AddTwoInts>::SharedFuture future)
         {
             if(future.valid()) 
@@ -42,6 +47,7 @@ class SimpleServiceClient : public rclcpp::Node {
         }
 };
 
+// Entrypoint: parse 2 integers and call the service
 int main(int argc, char* argv[])
 {   rclcpp::init(argc, argv);
     if(argc != 3) {

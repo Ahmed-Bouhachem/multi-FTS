@@ -1,7 +1,7 @@
-# Request
+# Request: identify the parent and child frames to query
 string frame_id
 string child_frame_id
 ---
-# Response
+# Response: TF2 lookup result and success flag
 geometry_msgs/TransformStamped transform
 bool success
