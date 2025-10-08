@@ -1,3 +1,4 @@
+# Maps joystick axes/buttons into velocity commands for the controller launch.
 joy_teleop:
   ros__parameters:
     move:

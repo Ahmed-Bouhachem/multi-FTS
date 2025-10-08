@@ -1,3 +1,5 @@
+# Controller manager configuration for Bumperbot. Defines the diff-drive stack
+# plus a simpler joint-group velocity controller for experimentation.
 controller_manager:
   ros__parameters:
     update_rate: 100

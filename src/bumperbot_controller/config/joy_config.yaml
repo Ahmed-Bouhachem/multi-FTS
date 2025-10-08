@@ -1,3 +1,4 @@
+# Basic driver settings for the physical joystick (mirrors `ros2 run joy`).
 joystick:
   ros__parameters:
     device_id: 0

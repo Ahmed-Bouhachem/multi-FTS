@@ -9,17 +9,19 @@
 //   pose estimate (x, y, theta) and logs it for visibility
 //
 // Notes:
-// - The include guard contains a legacy typo kept to preserve behavior.
 // - The implementation focuses on clarity rather than completeness; no PID.
 
 #ifndef SIMPLE_CONTROLLER_HPP
-#define SIMPLE_CONTROLLER_HPPs  // (sic) legacy include guard as originally written
+#define SIMPLE_CONTROLLER_HPP  // standard include guard
 
 #include <rclcpp/rclcpp.hpp>                         // Base ROS 2 node API
 #include <geometry_msgs/msg/twist_stamped.hpp>       // Commanded body twist (v, omega)
 #include <std_msgs/msg/float64_multi_array.hpp>      // Wheel speed command array
 #include <sensor_msgs/msg/joint_state.hpp>           // Encoders for odometry integration
+#include <nav_msgs/msg/odometry.hpp>
 #include <Eigen/Core>                                // 2x2 matrices and vectors
+#include <tf2_ros/transform_broadcaster.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp> 
 
 // SimpleController: converts body-frame velocities to wheel velocities and logs odometry.
 class SimpleController : public rclcpp::Node {
@@ -38,8 +40,9 @@ class SimpleController : public rclcpp::Node {
   
   // I/O interfaces
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_; // in: cmd_vel
-  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_cmd_pub_; // out: wheel speeds [right, left]
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_cmd_pub_; // out: wheel speeds [left, right]
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_; // in: wheel encoder positions
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; // out: integrated odom estimate
 
   // Robot geometry (meters) and conversion matrix mapping [v, omega] <-> [wr, wl]
   double wheel_radius_;      // radius of a drive wheel (m)
@@ -55,6 +58,11 @@ class SimpleController : public rclcpp::Node {
   double x_;
   double y_;
   double theta_;
+
+  nav_msgs::msg::Odometry odom_msg_;
+
+  std::unique_ptr<tf2_ros::TransformBroadcaster> transform_boardcaster_;
+  geometry_msgs::msg::TransformStamped transform_stamped_;
 
 };
 #endif
