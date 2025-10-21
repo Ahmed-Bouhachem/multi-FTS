@@ -66,6 +66,16 @@ def generate_launch_description():
                    '-x', '0', '-y', '0', '-z', '1.0'],  # Spawn 1 meter high
         output='screen'
     )
+    gz_Ros2_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            "/imu@sensor_msgs/msg/Imu/gz.msgs.IMU"
+        ],
+        remappings=[
+            ("/imu", "/imu/out")
+        ]
+    )
 
     return LaunchDescription([
         model_arg,
@@ -73,5 +83,6 @@ def generate_launch_description():
         robot_state_publisher_node,
         gzserver,
         gzclient,
-        spawn_entity
+        spawn_entity,
+        gz_Ros2_bridge
     ])

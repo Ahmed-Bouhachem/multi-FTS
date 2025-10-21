@@ -30,6 +30,7 @@ source install/setup.bash
 ros2 launch bumperbot_description gazebo_simple_control.launch.py
 
 # 3) Start Web UI teleop (publishes cmd_vel)
+source ../.venv/bin/activate
 bash scripts/run_web_ui.sh
 
 # 4) Visualize in RViz (preconfigured)

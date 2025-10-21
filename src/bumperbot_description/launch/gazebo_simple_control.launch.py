@@ -1,13 +1,3 @@
-"""
-Spawn the simple bumperbot with ros2_control in classic Gazebo and start controllers.
-
-This launch:
-- Processes a minimal URDF with ros2_control and publishes robot_description
-- Starts gzserver (headless) and optionally gzclient
-- Spawns the robot into Gazebo
-- Spawns joint_state_broadcaster and diff_drive_controller
-"""
-
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, TimerAction, DeclareLaunchArgument
 from launch.conditions import IfCondition
@@ -102,6 +92,36 @@ def generate_launch_description():
         ]
     )
 
+
+
+    start_helper_nodes = TimerAction(
+        period=7.0,
+        actions=[
+            Node(
+                package='bumperbot_controller',
+                executable='noisy_controller',
+                name='noisy_controller',
+                output='screen',
+                parameters=[{'use_sim_time': True}]
+            ),
+            Node(
+                package='bumperbot_controller',
+                executable='simple_controller',
+                name='simple_controller',
+                output='screen',
+                parameters=[{'use_sim_time': True}]
+            ),
+            Node(
+                package='bumperbot_localization',
+                executable='kalman_filter',
+                name='kalman_filter',
+                output='screen',
+                parameters=[{'use_sim_time': True}],
+                remappings=[('imu_plugin/out', 'imu')]
+            )
+        ]
+    )
+
     return LaunchDescription([
         gui_arg,
         gen_urdf_proc,
@@ -109,5 +129,6 @@ def generate_launch_description():
         gzclient,
         robot_state_publisher,
         spawn_entity,
-        start_controllers
+        start_controllers,
+        start_helper_nodes
     ])

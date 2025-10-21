@@ -1,30 +1,18 @@
 <?xml version="1.0"?>
-<!--
-  Minimal bumperbot model used by gazebo_simple_control.launch.py.
-  The intent is to keep geometry lightweight while still exercising ros2_control,
-  wheel kinematics, and an IMU pipeline for testing controllers and filters.
--->
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <!-- Runtime arguments so the same URDF can tweak the IMU plugin without editing the file. -->
-  <xacro:arg name="imu_plugin_filename" default="libgazebo_ros_imu_sensor.so"/>
   <xacro:arg name="imu_topic" default="imu"/>
+  <xacro:arg name="imu_plugin_filename" default="libgazebo_ros_imu_sensor.so"/>
 
-  <!-- Base footprint (map->base_footprint->base_link) -->
-  <!-- Thin link used so TF trees can attach map/odom frames cleanly in localization stacks. -->
   <link name="base_footprint"/>
-  
-  <!-- Main chassis -->
-  <!-- Box body keeps inertial math simple while roughly matching the real bumperbot volume. -->
+
   <link name="base_link">
     <inertial>
-      <!-- Center of mass located slightly above the ground plane to reflect chassis height. -->
       <origin xyz="0 0 0.04" rpy="0 0 0" />
       <mass value="0.8"/>
       <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02" />
     </inertial>
     <visual>
-      <!-- Simple box visual keeps Gazebo rendering cheap. -->
       <origin xyz="0 0 0.04" rpy="0 0 0" />
       <geometry>
         <box size="0.2 0.15 0.08"/>
@@ -32,7 +20,6 @@
       <material name="blue"><color rgba="0 0 1 1"/></material>
     </visual>
     <collision>
-      <!-- Reuse the box for collision; matches wheel height so contact behaves well. -->
       <origin xyz="0 0 0.04" rpy="0 0 0" />
       <geometry>
         <box size="0.2 0.15 0.08"/>
@@ -40,16 +27,12 @@
     </collision>
   </link>
 
-  <!-- Fixed transform from base_footprint to base_link -->
-  <!-- Keeps the chassis floating 3.3 cm above the footprint plane. -->
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link" />
     <origin xyz="0 0 0.033" rpy="0 0 0"/>
   </joint>
 
-  <!-- Right wheel as a cylinder -->
-  <!-- Cylindrical wheels are sufficient for differential-drive kinematics and collisions. -->
   <link name="wheel_right_link">
     <visual>
       <geometry>
@@ -58,28 +41,23 @@
       <material name="black"><color rgba="0 0 0 1"/></material>
     </visual>
     <collision>
-      <!-- Match the visual geometry so contact forces line up with the mesh. -->
       <geometry>
         <cylinder radius="0.033" length="0.02"/>
       </geometry>
     </collision>
     <inertial>
-      <!-- Lightweight wheels so acceleration behaves realistically in simulation. -->
       <mass value="0.05"/>
       <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
     </inertial>
   </link>
 
   <joint name="wheel_right_joint" type="continuous">
-    <!-- Position wheel on the negative Y side; roll axis aligns with Gazebo convention. -->
     <origin xyz="0 -0.07 0" rpy="1.57 0 0" />
     <parent link="base_link" />
     <child link="wheel_right_link" />
     <axis xyz="0 0 1" />
   </joint>
 
-  <!-- Gazebo contact/friction for right wheel to ensure traction -->
-  <!-- High mu values prevent sliding so velocity controllers have predictable behavior. -->
   <gazebo reference="wheel_right_link">
     <mu1>1.0</mu1>
     <mu2>1.0</mu2>
@@ -90,7 +68,6 @@
     <fdir1>1 0 0</fdir1>
   </gazebo>
 
-  <!-- Left wheel as a cylinder -->
   <link name="wheel_left_link">
     <visual>
       <geometry>
@@ -110,14 +87,12 @@
   </link>
 
   <joint name="wheel_left_joint" type="continuous">
-    <!-- Mirror of the right wheel: positive Y offset, same axle orientation. -->
     <origin xyz="0 0.07 0" rpy="1.57 0 0" />
     <parent link="base_link" />
     <child link="wheel_left_link" />
     <axis xyz="0 0 1" />
   </joint>
 
-  <!-- Gazebo contact/friction for left wheel to ensure traction -->
   <gazebo reference="wheel_left_link">
     <mu1>1.0</mu1>
     <mu2>1.0</mu2>
@@ -128,28 +103,20 @@
     <fdir1>1 0 0</fdir1>
   </gazebo>
 
-  <!-- IMU link for sensor frame alignment -->
-  <!-- Bring over the detailed inertial properties so filters can model the IMU accurately. -->
   <link name="imu_link">
     <inertial>
       <origin xyz="-0.00552433659106688 0.000168210391520346 0.000514000497342681" rpy="0 0 0" />
       <mass value="0.000528415362211671" />
       <inertia ixx="1.46176048428261E-08" ixy="1.40015117949421E-10" ixz="-1.99633872937403E-12"
-               iyy="8.59662482954888E-09" iyz="7.52375112767959E-12"
-               izz="2.30279421279312E-08" />
+               iyy="8.59662482954888E-09" iyz="7.52375112767959E-12" izz="2.30279421279312E-08" />
     </inertial>
     <visual>
-      <!-- Reference an STL so the sensor appears in RViz/Gazebo for debugging. -->
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/imu_link.STL" />
       </geometry>
-      <material name="imu_gray">
-        <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
-      </material>
     </visual>
     <collision>
-      <!-- Use the same mesh for collision to catch accidental contacts in sim. -->
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/imu_link.STL" />
@@ -158,25 +125,19 @@
   </link>
 
   <joint name="imu_joint" type="fixed">
-    <!-- Mount the IMU above the chassis center for realistic sensor frame alignment. -->
     <origin xyz="0 0 0.0698986241758014" rpy="0 0 0" />
     <parent link="base_link" />
     <child link="imu_link" />
-    <axis xyz="0 0 0" />
   </joint>
 
-  <!-- Gazebo sensor definition so Classic publishes IMU data with configurable noise. -->
   <gazebo reference="imu_link">
     <sensor name="imu" type="imu">
       <always_on>true</always_on>
       <update_rate>100</update_rate>
-      <gz_frame_id>imu_link</gz_frame_id>
       <topic>$(arg imu_topic)</topic>
-
       <imu>
         <angular_velocity>
           <x>
-            <!-- Gaussian noise per axis keeps angular velocity data realistic. -->
             <noise type="gaussian">
               <mean>0.0</mean>
               <stddev>2e-4</stddev>
@@ -195,10 +156,8 @@
             </noise>
           </z>
         </angular_velocity>
-
         <linear_acceleration>
           <x>
-            <!-- Acceleration noise tuned to match consumer-grade IMU specs. -->
             <noise type="gaussian">
               <mean>0.0</mean>
               <stddev>1.7e-2</stddev>
@@ -218,29 +177,24 @@
           </z>
         </linear_acceleration>
       </imu>
-
       <plugin name="imu_plugin" filename="$(arg imu_plugin_filename)">
-        <!-- Classic Gazebo expects these tags instead of ROS 2 remappings. -->
-        <topicName>$(arg imu_topic)</topicName>
-        <frameName>imu_link</frameName>
+        <ros>
+          <remapping>~/imu:=$(arg imu_topic)</remapping>
+        </ros>
+        <frame_name>imu_link</frame_name>
       </plugin>
     </sensor>
   </gazebo>
 
-  <!-- ros2_control hardware + interfaces for wheel joints (Gazebo integration) -->
-  <!-- Plugin block declares the simulated hardware interface with velocity commands. -->
   <ros2_control name="BumperBotSystem" type="system">
     <hardware>
-      <!-- Use GazeboSystem so gazebo_ros2_control can drive the joints -->
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
-
     <joint name="wheel_right_joint">
       <command_interface name="velocity"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
     </joint>
-
     <joint name="wheel_left_joint">
       <command_interface name="velocity"/>
       <state_interface name="position"/>
@@ -248,13 +202,10 @@
     </joint>
   </ros2_control>
 
-  <!-- Enable Gazebo ros2_control plugin so controllers drive the robot in sim -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
       <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
     </plugin>
   </gazebo>
-
-
 
 </robot>

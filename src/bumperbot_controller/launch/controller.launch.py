@@ -1,12 +1,3 @@
-
-"""Launch controller manager spawners and optional helper nodes.
-
-This launch file wires up the ros2_control stack for Bumperbot, optionally
-spawning either the standard diff-drive controller or the simple velocity
-controller, and launches helper nodes (simple + noisy controllers) for testing
-wheel command pipelines.
-"""
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition, UnlessCondition
