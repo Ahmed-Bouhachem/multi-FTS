@@ -2,16 +2,16 @@
 
 ## Latest Updates
 
-### ✅ Working ros2_control Integration (Gazebo Classic)
+### ✅ Working ros2_control Integration (Gazebo Sim)
 - Successfully implemented differential drive controller
 - Fixed controller configuration issues
-- Robot now responds to velocity commands in Gazebo
+- Robot now responds to velocity commands in Gazebo Sim (Ignition)
 - Mock hardware simulation working properly
 
 ### Quick Test
 ```bash
 # Launch robot with controllers
-ros2 launch bumperbot_description gazebo_simple_control.launch.py
+ros2 launch bumperbot_description gazebo.launch.py
 
 # Control the robot
 ros2 topic pub /diff_drive_controller/cmd_vel geometry_msgs/msg/Twist \
@@ -26,8 +26,8 @@ source /opt/ros/humble/setup.bash
 colcon build
 source install/setup.bash
 
-# 2) Start simulation + controllers (Gazebo Classic)
-ros2 launch bumperbot_description gazebo_simple_control.launch.py
+# 2) Start simulation + controllers (Gazebo Sim / Ignition)
+ros2 launch bumperbot_description gazebo.launch.py
 
 # 3) Start Web UI teleop (publishes cmd_vel)
 source ../.venv/bin/activate
@@ -71,7 +71,7 @@ Make sure a model publisher is running, then open RViz2.
 ros2 launch bumperbot_description display.launch.py
 
 # Or full sim + controllers
-ros2 launch bumperbot_description gazebo_simple_control.launch.py
+ros2 launch bumperbot_description gazebo.launch.py
 
 # RViz with preconfigured view
 rviz2 -d $(ros2 pkg prefix bumperbot_description)/share/bumperbot_description/rviz/display.rviz
@@ -88,6 +88,23 @@ ros2 node list | grep robot_state_publisher
 ros2 topic echo -n1 /tf_static
 ```
 
+## PlotJuggler (Live Telemetry Plots)
+
+Plot noisy controller odometry, wheel speeds, or any other ROS 2 topic in real time.
+
+1. Ensure the helper nodes are running so `/bumperbot_controller/odom_noisy` is being published:
+   ```bash
+   ros2 launch bumperbot_description gazebo.launch.py start_helper_nodes:=true
+   ```
+2. Launch PlotJuggler with ROS 2 integration:
+   ```bash
+   ros2 run plotjuggler plotjuggler --ros2
+   ```
+3. In PlotJuggler, open the ROS 2 streaming data source and add signals such as
+   `/bumperbot_controller/odom_noisy/pose/pose/position/x` or `/joint_states/velocity[wheel_left_joint]`.
+
+Tip: save the layout once you have the plots you like so you can reload them next time.
+
 ## Project Structure
 - `src/bumperbot_description/`: Robot URDF and launch files
 - `src/bumperbot_controller/`: ros2_control configuration
@@ -95,24 +112,52 @@ ros2 topic echo -n1 /tf_static
 
 ## Simulation Options
 
-You can simulate with either Gazebo Classic or Webots.
+You can simulate with either Gazebo Sim (Ignition) or Webots.
 
-### Gazebo Classic
-- Headless with controllers:
+### Gazebo Sim (Ignition)
+- Headless with controllers (default):
   - `source install/setup.bash`
   - `bash scripts/run_gazebo.sh --control`
 
-- GUI client as well:
+- Show the GUI instead of headless:
   - `bash scripts/run_gazebo.sh --control --gui`
 
 - Simple spawn (no controllers):
   - `bash scripts/run_gazebo.sh --simple`
 
-- Stop Gazebo:
+- Load a specific world resource:
+  - `bash scripts/run_gazebo.sh --world my_world.sdf`
+
+- Stop Gazebo Sim:
   - `bash scripts/stop_gazebo.sh`
 
-Notes: You can also launch directly with `ros2 launch bumperbot_description gazebo_simple_control.launch.py`. The scripts help kill stale processes and manage logs.
+Built-in Ignition worlds (located under `share/bumperbot_description/worlds`) can be referenced directly or by passing their short names to `gazebo.launch.py` / `scripts/run_gazebo.sh`:
+- `empty.world` – flat plane with bright lighting (default)
+- `small_house.world` – furnished residential interior using AWS RoboMaker assets
+- `small_warehouse.world` – warehouse-style layout with pallets, shelving, and clutter
 
+`gazebo.launch.py` is the single entry point for all Gazebo Sim workflows and now launches `ign gazebo` under the hood. Useful arguments:
+- `with_controllers:=true|false` – start ros2_control spawners (defaults to `true`)
+- `start_helper_nodes:=true|false` – launch `noisy_controller`, `simple_controller`, and localization helpers
+- `model:=/abs/path/to/model.xacro` – choose between the detailed (`bumperbot.urdf.xacro`) or simple (`bumperbot_simple.urdf.xacro`) robot
+- `gui:=true|false`, `world:=<resource>`, `spawn_x/y/z:=<value>` – pass directly to Gazebo Sim
+
+Examples:
+```bash
+# Detailed robot with controllers (default behavior)
+ros2 launch bumperbot_description gazebo.launch.py
+
+# Simple boxy robot without controllers
+ros2 launch bumperbot_description gazebo.launch.py \
+  model:=$(ros2 pkg prefix bumperbot_description)/share/bumperbot_description/urdf/bumperbot_simple.urdf.xacro \
+  with_controllers:=false start_helper_nodes:=false
+
+# Furnished house world with GUI
+ros2 launch bumperbot_description gazebo.launch.py gui:=true \
+  world:=$(ros2 pkg prefix bumperbot_description)/share/bumperbot_description/worlds/small_house.world
+```
+
+Notes: The helper scripts now wrap `gazebo.launch.py`, so `scripts/run_gazebo.sh` / `scripts/stop_gazebo.sh` automatically benefit from the options above.
 ### Webots
 - Launch Webots with the provided world and publish robot_description:
   - `source install/setup.bash`
@@ -168,7 +213,7 @@ git push origin main
 
 ## Dependencies (ROS 2 Humble on Ubuntu)
 
-Install the required packages for building and running with Gazebo Classic and Webots.
+Install the required packages for building and running with Gazebo Sim (Ignition) and Webots.
 
 ```bash
 sudo apt update
@@ -189,17 +234,20 @@ sudo apt install -y \
   ros-humble-ros2-controllers \
   ros-humble-controller-manager
 
-# Gazebo Classic + ROS integration
+# Gazebo Sim (Ignition) + ROS integration
 sudo apt install -y \
-  gazebo \
-  ros-humble-gazebo-ros \
-  ros-humble-gazebo-ros-pkgs \
-  ros-humble-gazebo-ros2-control
+  ros-humble-ros-gz-sim \
+  ros-humble-ros-gz-bridge \
+  ros-humble-gz-ros2-control
 
 # Webots + ROS integration
 sudo apt install -y \
   webots \
   ros-humble-webots-ros2-driver
+
+# Plotting / debugging tools
+sudo apt install -y \
+  ros-humble-plotjuggler-ros
 ```
 
 Build workspace:

@@ -1,78 +1,86 @@
 """
-Spawn the simple bumperbot in classic Gazebo without controllers.
-
-Publishes robot_description via robot_state_publisher, starts gzserver/gzclient,
-and spawns the robot into the empty.world.
+Compatibility wrapper to spawn the simple bumperbot model without controllers.
 """
 
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, TimerAction, DeclareLaunchArgument
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
-from launch.substitutions import Command
-from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 import os
 
+
 def generate_launch_description():
     pkg_dir = get_package_share_directory('bumperbot_description')
-    
-    # Use the simple URDF
-    xacro_file = os.path.join(pkg_dir, 'urdf', 'bumperbot_simple.urdf.xacro')
-    robot_description = ParameterValue(
-        Command(['xacro ', xacro_file]),
-        value_type=str
-    )
 
-    # GUI toggle
+    default_world = os.path.join(pkg_dir, 'worlds', 'empty.world')
+
     gui_arg = DeclareLaunchArgument(
         name='gui',
         default_value='true',
-        description='Launch Gazebo client (GUI)'
+        description='Launch Gazebo (Ignition) client GUI'
     )
 
-    # Gazebo server with ROS plugins (factory/init)
-    gzserver = ExecuteProcess(
-        cmd=[
-            'gzserver', '--verbose',
-            '/usr/share/gazebo-11/worlds/empty.world',
-            '-s', 'libgazebo_ros_init.so',
-            '-s', 'libgazebo_ros_factory.so'
-        ],
-        output='screen'
+    world_arg = DeclareLaunchArgument(
+        name='world',
+        default_value=default_world,
+        description='Gazebo Sim world resource to load'
     )
 
-    gzclient = ExecuteProcess(
-        condition=IfCondition(LaunchConfiguration('gui')),
-        cmd=['gzclient'],
-        output='screen'
+    model_arg = DeclareLaunchArgument(
+        name='model',
+        default_value=os.path.join(pkg_dir, 'urdf', 'bumperbot_simple.urdf.xacro'),
+        description='Absolute path to the bumperbot simple URDF/xacro file'
     )
 
-    # Robot state publisher: publishes TF from URDF
-    robot_state_publisher = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[{"robot_description": robot_description}]
+    spawn_x_arg = DeclareLaunchArgument(
+        name='spawn_x',
+        default_value='0.0',
+        description='Initial X position'
     )
 
-    # Spawn robot after a short delay to ensure Gazebo is ready
-    spawn_entity = TimerAction(
-        period=3.0,
-        actions=[
-            Node(
-                package='gazebo_ros',
-                executable='spawn_entity.py',
-                arguments=['-entity', 'bumperbot_simple', '-topic', 'robot_description', '-z', '1.0'],
-                output='screen'
-            )
-        ]
+    spawn_y_arg = DeclareLaunchArgument(
+        name='spawn_y',
+        default_value='0.0',
+        description='Initial Y position'
+    )
+
+    spawn_z_arg = DeclareLaunchArgument(
+        name='spawn_z',
+        default_value='0.05',
+        description='Initial Z position'
+    )
+
+    entity_arg = DeclareLaunchArgument(
+        name='entity',
+        default_value='bumperbot_simple',
+        description='Entity name for the spawned robot'
+    )
+
+    include = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_dir, 'launch', 'gazebo.launch.py')
+        ),
+        launch_arguments={
+            'gui': LaunchConfiguration('gui'),
+            'world': LaunchConfiguration('world'),
+            'model': LaunchConfiguration('model'),
+            'with_controllers': 'false',
+            'start_helper_nodes': 'false',
+            'spawn_x': LaunchConfiguration('spawn_x'),
+            'spawn_y': LaunchConfiguration('spawn_y'),
+            'spawn_z': LaunchConfiguration('spawn_z'),
+            'entity': LaunchConfiguration('entity')
+        }.items()
     )
 
     return LaunchDescription([
         gui_arg,
-        gzserver,
-        gzclient,
-        robot_state_publisher,
-        spawn_entity
+        world_arg,
+        model_arg,
+        spawn_x_arg,
+        spawn_y_arg,
+        spawn_z_arg,
+        entity_arg,
+        include
     ])

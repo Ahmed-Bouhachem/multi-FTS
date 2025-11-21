@@ -4,6 +4,9 @@
 
 #include "noisy_controller.hpp"  // local header
 
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
 #include <Eigen/Geometry>
 #include <tf2/LinearMath/Quaternion.hpp>
 #include <chrono>
@@ -16,6 +19,7 @@ NoisyController::NoisyController(const std::string & name)
 : Node(name)
   , left_wheel_prev_pos_(0.0)
   , right_wheel_prev_pos_(0.0)
+  , have_prev_time_(false)
   , x_(0.0)
   , y_(0.0)
   , theta_(0.0)
@@ -28,8 +32,32 @@ NoisyController::NoisyController(const std::string & name)
     wheel_radius_ = get_parameter("wheel_radius").as_double();
     wheel_separation_ = get_parameter("wheel_separation").as_double();
 
+    left_wheel_joints_ = this->declare_parameter<std::vector<std::string>>(
+        "left_wheel_joints",
+        {"wheel_left_joint"});
+    right_wheel_joints_ = this->declare_parameter<std::vector<std::string>>(
+        "right_wheel_joints",
+        {"wheel_right_joint"});
+
+    if (left_wheel_joints_.empty() || right_wheel_joints_.empty()) {
+        throw std::runtime_error("Wheel joint parameter lists must not be empty.");
+    }
+
+    auto join_names = [](const std::vector<std::string> &names) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < names.size(); ++i) {
+            if (i > 0) {
+                oss << ", ";
+            }
+            oss << names[i];
+        }
+        return oss.str();
+    };
+
     RCLCPP_INFO_STREAM(get_logger(), "Using wheel_radius " << wheel_radius_);
     RCLCPP_INFO_STREAM(get_logger(), "Using wheel_separation " << wheel_separation_);
+    RCLCPP_INFO_STREAM(get_logger(), "Left wheel joints: [" << join_names(left_wheel_joints_) << "]");
+    RCLCPP_INFO_STREAM(get_logger(), "Right wheel joints: [" << join_names(right_wheel_joints_) << "]");
 
     prev_time_ = get_clock()->now();
 
@@ -62,17 +90,75 @@ void NoisyController::jointCallback(const sensor_msgs::msg::JointState &msg)
     std::default_random_engine noise_generator(seed);
     std::normal_distribution<double> left_encoder_noise(0.0, 0.005);  // radians
     std::normal_distribution<double> right_encoder_noise(0.0, 0.005); // radians
-    double wheel_encoder_left = msg.position.at(1) + left_encoder_noise(noise_generator);
-    double wheel_encoder_right = msg.position.at(0) + right_encoder_noise(noise_generator);
-    // Grab wheel position deltas (radians); assumes indices [right=0, left=1]
-    double dp_left = wheel_encoder_left - left_wheel_prev_pos_;
-    double dp_right = wheel_encoder_right - right_wheel_prev_pos_;
+    auto compute_average_position =
+        [&](const std::vector<std::string> &joint_names,
+            std::normal_distribution<double> &noise_distribution,
+            double &noisy_average,
+            double &true_average) -> bool {
+            if (joint_names.empty()) {
+                return false;
+            }
+            double sum = 0.0;
+            double noisy_sum = 0.0;
+            for (const auto &joint_name : joint_names) {
+                auto it = std::find(msg.name.begin(), msg.name.end(), joint_name);
+                if (it == msg.name.end()) {
+                    RCLCPP_WARN_THROTTLE(
+                        get_logger(), *get_clock(), 2000,
+                        "Joint '%s' not present in JointState message.", joint_name.c_str());
+                    return false;
+                }
+                const auto index = static_cast<size_t>(std::distance(msg.name.begin(), it));
+                if (index >= msg.position.size()) {
+                    RCLCPP_WARN_THROTTLE(
+                        get_logger(), *get_clock(), 2000,
+                        "JointState position array shorter than names array.");
+                    return false;
+                }
+                double position = msg.position.at(index);
+                sum += position;
+                noisy_sum += position + noise_distribution(noise_generator);
+            }
+            true_average = sum / static_cast<double>(joint_names.size());
+            noisy_average = noisy_sum / static_cast<double>(joint_names.size());
+            return true;
+        };
+
+    double left_position = 0.0;
+    double right_position = 0.0;
+    double noisy_left_position = 0.0;
+    double noisy_right_position = 0.0;
+
+    if (!compute_average_position(
+            left_wheel_joints_, left_encoder_noise, noisy_left_position, left_position) ||
+        !compute_average_position(
+            right_wheel_joints_, right_encoder_noise, noisy_right_position, right_position)) {
+        return;
+    }
 
     rclcpp::Time msg_time = msg.header.stamp;
-    rclcpp::Duration dt = msg_time - prev_time_;
+    if (!have_prev_time_) {
+        prev_time_ = msg_time;
+        left_wheel_prev_pos_ = left_position;
+        right_wheel_prev_pos_ = right_position;
+        have_prev_time_ = true;
+        return;
+    }
 
-    left_wheel_prev_pos_ = msg.position.at(1);
-    right_wheel_prev_pos_ = msg.position.at(0);
+    rclcpp::Duration dt = msg_time - prev_time_;
+    if (dt.seconds() <= 0.0) {
+        RCLCPP_WARN_THROTTLE(
+            get_logger(), *get_clock(), 2000,
+            "Non-positive dt detected (%.6f s); skipping odom integration.", dt.seconds());
+        return;
+    }
+
+    // Grab wheel position deltas (radians) using noisy observations to emulate encoder error
+    double dp_left = noisy_left_position - left_wheel_prev_pos_;
+    double dp_right = noisy_right_position - right_wheel_prev_pos_;
+
+    left_wheel_prev_pos_ = left_position;
+    right_wheel_prev_pos_ = right_position;
     prev_time_ = msg_time;
 
     // Instantaneous wheel angular rates (rad/s)

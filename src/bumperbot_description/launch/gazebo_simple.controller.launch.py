@@ -13,10 +13,18 @@ import os
 def generate_launch_description():
     pkg_dir = get_package_share_directory('bumperbot_description')
 
+    default_world = os.path.join(pkg_dir, 'worlds', 'empty.world')
+
     gui_arg = DeclareLaunchArgument(
         name='gui',
         default_value='true',
         description='Launch Gazebo client (GUI)'
+    )
+
+    world_arg = DeclareLaunchArgument(
+        name='world',
+        default_value=default_world,
+        description='Gazebo Sim world resource to load'
     )
 
     # Delegate to the maintained control launch file
@@ -25,11 +33,13 @@ def generate_launch_description():
             os.path.join(pkg_dir, 'launch', 'gazebo_simple_control.launch.py')
         ),
         launch_arguments={
-            'gui': LaunchConfiguration('gui')
+            'gui': LaunchConfiguration('gui'),
+            'world': LaunchConfiguration('world')
         }.items()
     )
 
     return LaunchDescription([
         gui_arg,
+        world_arg,
         include
     ])

@@ -58,7 +58,7 @@ def generate_launch_description():
 
     wheel_separation_arg = DeclareLaunchArgument(
         "wheel_separation",
-        default_value="0.17"
+        default_value="0.1402"
     )
 
     use_simple_controller_arg = DeclareLaunchArgument(

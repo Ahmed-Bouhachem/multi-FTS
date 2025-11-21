@@ -6,6 +6,9 @@
 
 #include "simple_controller.hpp"  // local header
 
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
 #include <Eigen/Geometry>
 #include <tf2/LinearMath/Quaternion.hpp>
 
@@ -17,6 +20,7 @@ SimpleController::SimpleController(const std::string & name)
 : Node(name)
   , left_wheel_prev_pos_(0.0)
   , right_wheel_prev_pos_(0.0)
+  , have_prev_time_(false)
   , x_(0.0)
   , y_(0.0)
   , theta_(0.0)
@@ -29,8 +33,32 @@ SimpleController::SimpleController(const std::string & name)
     wheel_radius_ = get_parameter("wheel_radius").as_double();
     wheel_separation_ = get_parameter("wheel_separation").as_double();
 
+    left_wheel_joints_ = this->declare_parameter<std::vector<std::string>>(
+        "left_wheel_joints",
+        {"wheel_left_joint"});
+    right_wheel_joints_ = this->declare_parameter<std::vector<std::string>>(
+        "right_wheel_joints",
+        {"wheel_right_joint"});
+
+    if (left_wheel_joints_.empty() || right_wheel_joints_.empty()) {
+        throw std::runtime_error("Wheel joint parameter lists must not be empty.");
+    }
+
+    auto join_names = [](const std::vector<std::string> &names) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < names.size(); ++i) {
+            if (i > 0) {
+                oss << ", ";
+            }
+            oss << names[i];
+        }
+        return oss.str();
+    };
+
     RCLCPP_INFO_STREAM(get_logger(), "Using wheel_radius " << wheel_radius_);
     RCLCPP_INFO_STREAM(get_logger(), "Using wheel_separation " << wheel_separation_);
+    RCLCPP_INFO_STREAM(get_logger(), "Left wheel joints: [" << join_names(left_wheel_joints_) << "]");
+    RCLCPP_INFO_STREAM(get_logger(), "Right wheel joints: [" << join_names(right_wheel_joints_) << "]");
 
     prev_time_ = get_clock()->now();
 
@@ -81,24 +109,79 @@ void SimpleController::velCallback(const geometry_msgs::msg::TwistStamped & msg)
     Eigen::Vector2d wheel_speed = speed_conversion_.inverse() * robot_speed;
 
     std_msgs::msg::Float64MultiArray wheel_speed_msg;
-    // Push in the same order configured for the JointGroupVelocityController: [left, right]
-    wheel_speed_msg.data.push_back(wheel_speed.coeff(1)); // left
-    wheel_speed_msg.data.push_back(wheel_speed.coeff(0)); // right
+    wheel_speed_msg.data.reserve(left_wheel_joints_.size() + right_wheel_joints_.size());
+
+    for (const auto & joint : left_wheel_joints_) {
+        (void)joint;
+        wheel_speed_msg.data.push_back(wheel_speed.coeff(1)); // identical command for each left wheel
+    }
+    for (const auto & joint : right_wheel_joints_) {
+        (void)joint;
+        wheel_speed_msg.data.push_back(wheel_speed.coeff(0)); // identical command for each right wheel
+    }
 
     wheel_cmd_pub_->publish(wheel_speed_msg);
 }
 // Integrate encoder positions to maintain a simple planar pose estimate and log it.
 void SimpleController::jointCallback(const sensor_msgs::msg::JointState &msg)
 {
-    // Grab wheel position deltas (radians); assumes indices [right=0, left=1]
-    double dp_left = msg.position.at(1) - left_wheel_prev_pos_;
-    double dp_right = msg.position.at(0) - right_wheel_prev_pos_;
+    auto compute_average_position =
+        [&](const std::vector<std::string> &joint_names, double &average) -> bool {
+            if (joint_names.empty()) {
+                return false;
+            }
+            double sum = 0.0;
+            for (const auto &joint_name : joint_names) {
+                auto it = std::find(msg.name.begin(), msg.name.end(), joint_name);
+                if (it == msg.name.end()) {
+                    RCLCPP_WARN_THROTTLE(
+                        get_logger(), *get_clock(), 2000,
+                        "Joint '%s' not present in JointState message.", joint_name.c_str());
+                    return false;
+                }
+                const auto index = static_cast<size_t>(std::distance(msg.name.begin(), it));
+                if (index >= msg.position.size()) {
+                    RCLCPP_WARN_THROTTLE(
+                        get_logger(), *get_clock(), 2000,
+                        "JointState position array shorter than names array.");
+                    return false;
+                }
+                sum += msg.position.at(index);
+            }
+            average = sum / static_cast<double>(joint_names.size());
+            return true;
+        };
+
+    double left_position = 0.0;
+    double right_position = 0.0;
+    if (!compute_average_position(left_wheel_joints_, left_position) ||
+        !compute_average_position(right_wheel_joints_, right_position)) {
+        return;
+    }
 
     rclcpp::Time msg_time = msg.header.stamp;
-    rclcpp::Duration dt = msg_time - prev_time_;
+    if (!have_prev_time_) {
+        prev_time_ = msg_time;
+        left_wheel_prev_pos_ = left_position;
+        right_wheel_prev_pos_ = right_position;
+        have_prev_time_ = true;
+        return;
+    }
 
-    left_wheel_prev_pos_ = msg.position.at(1);
-    right_wheel_prev_pos_ = msg.position.at(0);
+    rclcpp::Duration dt = msg_time - prev_time_;
+    if (dt.seconds() <= 0.0) {
+        RCLCPP_WARN_THROTTLE(
+            get_logger(), *get_clock(), 2000,
+            "Non-positive dt detected (%.6f s); skipping odom integration.", dt.seconds());
+        return;
+    }
+
+    // Grab wheel position deltas (radians) based on averaged joints per side
+    double dp_left = left_position - left_wheel_prev_pos_;
+    double dp_right = right_position - right_wheel_prev_pos_;
+
+    left_wheel_prev_pos_ = left_position;
+    right_wheel_prev_pos_ = right_position;
     prev_time_ = msg_time;
 
     // Instantaneous wheel angular rates (rad/s)

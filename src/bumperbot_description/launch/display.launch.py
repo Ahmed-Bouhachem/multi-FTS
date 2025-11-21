@@ -1,68 +1,53 @@
 """
-Display the bumperbot model only (no controllers), using classic Gazebo server.
-
-This launch publishes robot_description from xacro, starts classic gzserver and
-gzclient, and spawns the robot after a short delay to ensure Gazebo is ready.
+Display the bumperbot model only (no controllers) using Gazebo Sim (Ignition).
 """
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command
-from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
+from launch.substitutions import LaunchConfiguration
 from ament_index_python.packages import get_package_share_directory
 import os
 
+
 def generate_launch_description():
     bumperbot_description_dir = get_package_share_directory('bumperbot_description')
-    gazebo_ros = get_package_share_directory('gazebo_ros')
-    
-    # Process xacro file
-    xacro_file = os.path.join(bumperbot_description_dir, 'urdf', 'bumperbot.urdf.xacro')
-    robot_description = ParameterValue(
-        Command(['xacro ', xacro_file]),
-        value_type=str
+
+    model_arg = DeclareLaunchArgument(
+        name='model',
+        default_value=os.path.join(bumperbot_description_dir, 'urdf', 'bumperbot.urdf.xacro'),
+        description="Absolute path to the bumperbot URDF model file."
     )
 
-    # Publish robot_description and TF
-    robot_state_publisher_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[{"robot_description": robot_description}]
+    default_world = os.path.join(bumperbot_description_dir, 'worlds', 'empty.world')
+    gui_arg = DeclareLaunchArgument(
+        name='gui',
+        default_value='true',
+        description='Launch Gazebo (Ignition) client GUI'
     )
 
-    # Use classic gzserver with factory plugin
-    gzserver = IncludeLaunchDescription(
+    world_arg = DeclareLaunchArgument(
+        name='world',
+        default_value=default_world,
+        description='Gazebo Sim world resource to load'
+    )
+
+    include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(bumperbot_description_dir, 'launch', 'classic_gzserver.launch.py')),
-        launch_arguments={'extra_gazebo_args': ''}.items()
-    )
-
-    gzclient = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(gazebo_ros, 'launch', 'gzclient.launch.py'))
-    )
-
-    # Add delay to ensure Gazebo is fully started
-    spawn_entity_delayed = TimerAction(
-        period=5.0,  # Wait 5 seconds
-        actions=[
-            Node(
-                package='gazebo_ros',
-                executable='spawn_entity.py',
-                name='spawn_entity',
-                arguments=['-entity', 'bumperbot',
-                           '-topic', 'robot_description',
-                           '-x', '0', '-y', '0', '-z', '1.0'],
-                output='screen'
-            )
-        ]
+            os.path.join(bumperbot_description_dir, 'launch', 'gazebo.launch.py')
+        ),
+        launch_arguments={
+            'model': LaunchConfiguration('model'),
+            'gui': LaunchConfiguration('gui'),
+            'world': LaunchConfiguration('world'),
+            'with_controllers': 'false',
+            'start_helper_nodes': 'false'
+        }.items()
     )
 
     return LaunchDescription([
-        robot_state_publisher_node,
-        gzserver,
-        gzclient,
-        spawn_entity_delayed
+        model_arg,
+        gui_arg,
+        world_arg,
+        include
     ])

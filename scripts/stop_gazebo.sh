@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop a Gazebo run started by scripts/run_gazebo.sh, if running.
+# Stop a Gazebo Sim run started by scripts/run_gazebo.sh, if running.
 set -euo pipefail
 
 if [[ -f log/gazebo_run.pid ]]; then
@@ -11,7 +11,7 @@ if [[ -f log/gazebo_run.pid ]]; then
   rm -f log/gazebo_run.pid
 fi
 
-echo "Killing any remaining Gazebo processes..."
-pkill -f gzserver 2>/dev/null || true
-pkill -f gzclient 2>/dev/null || true
+echo "Killing any remaining Gazebo Sim processes..."
+pkill -f "gz sim" 2>/dev/null || true
+pkill -f "ign gazebo" 2>/dev/null || true
 echo "Done."

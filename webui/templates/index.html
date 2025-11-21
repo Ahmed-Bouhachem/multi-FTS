@@ -13,7 +13,7 @@
 
     <!-- External CSS file with styles (colors, layout, fonts, etc.).
          Flask serves this file from your /static folder. -->
-    <link rel="stylesheet" href="/static/main.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css', v='20251120') }}" />
   </head>
   <body>
     <div class="container">
@@ -58,7 +58,7 @@
       </div>
 
       <!-- Hint for keyboard controls (JS will capture arrow keys & space bar) -->
-      <p class="hint">Keyboard: arrows to drive, space to stop.</p>
+      <p class="hint">Keyboard: arrows to drive (hold Shift to keep your current forward/back speed while turning), space to stop.</p>
     </div>
 
     <!-- === Scripts === -->
@@ -71,6 +71,6 @@
          - Attaches button/keyboard listeners
          - Opens a Socket.IO connection to the Flask server
          - Sends {linear, angular} commands via 'cmd_vel' events -->
-    <script src="/static/main.js"></script>
+    <script src="{{ url_for('static', filename='main.js', v='20251120') }}"></script>
   </body>
 </html>

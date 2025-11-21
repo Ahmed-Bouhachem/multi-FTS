@@ -20,6 +20,8 @@
 #include <sensor_msgs/msg/joint_state.hpp>           // Encoders for odometry integration
 #include <nav_msgs/msg/odometry.hpp>
 #include <Eigen/Core>                                // 2x2 matrices and vectors
+#include <string>
+#include <vector>
 #include <tf2_ros/transform_broadcaster.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp> 
 
@@ -40,7 +42,7 @@ class SimpleController : public rclcpp::Node {
   
   // I/O interfaces
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr vel_sub_; // in: cmd_vel
-  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_cmd_pub_; // out: wheel speeds [left, right]
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr wheel_cmd_pub_; // out: wheel speeds (per joint)
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_sub_; // in: wheel encoder positions
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; // out: integrated odom estimate
 
@@ -49,10 +51,14 @@ class SimpleController : public rclcpp::Node {
   double wheel_separation_;  // distance between wheel contact points (track width, m)
   Eigen::Matrix2d speed_conversion_; // convenience matrix used for conversion
 
+  std::vector<std::string> left_wheel_joints_;   // joint names on the left side
+  std::vector<std::string> right_wheel_joints_;  // joint names on the right side
+
   // Previous wheel positions and timestamp for delta computations
   double left_wheel_prev_pos_;
   double right_wheel_prev_pos_;
   rclcpp::Time prev_time_;
+  bool have_prev_time_{false};
 
   // Integrated planar pose estimate (world frame)
   double x_;

@@ -21,22 +21,40 @@ Design notes:
   unless USE_STAMPED_VEL=1 in the environment.
 """
 
-import os                  # Standard lib: read environment variables (e.g., USE_STAMPED_VEL)
-import atexit              # Standard lib: register cleanup handlers to run on process exit
-import threading           # Standard lib: run ROS event loop in a background thread
-from dataclasses import dataclass  # Helper for simple structured data containers
+import os
+import atexit
+import threading
+import subprocess
+import signal
+from dataclasses import dataclass
+from typing import Optional, Tuple
 
 from flask import Flask, render_template, redirect, request   # Flask core APIs
 from flask_socketio import SocketIO                           # Socket.IO server for real-time web comms
 
 # ROS 2 Python client library
 import rclpy
-from rclpy.node import Node                                   # Base class for building ROS 2 nodes
-from geometry_msgs.msg import Twist, TwistStamped             # Message types used for velocity commands
+from rclpy.node import Node
+from rclpy.parameter import Parameter
+from geometry_msgs.msg import Twist, TwistStamped
 
 # Decide at runtime whether to use stamped or unstamped commands based on env.
 # By default, we send UNSTAMPED Twist to match your diff_drive_controller YAML (use_stamped_vel: false).
 USE_STAMPED_VEL = os.getenv("USE_STAMPED_VEL", "0").lower() in ("1", "true", "yes")
+USE_SIM_TIME = os.getenv("WEBUI_USE_SIM_TIME", "1").lower() in ("1", "true", "yes")
+
+# Allow the web UI to start/stop Gazebo via subprocess if desired.
+DEFAULT_SIM_COMMAND = [
+    "ros2",
+    "launch",
+    "bumperbot_description",
+    "gazebo.launch.py",
+]
+DEFAULT_SIM_WORLD = os.getenv("WEBUI_SIM_WORLD", "")
+DEFAULT_SIM_GUI = os.getenv("WEBUI_SIM_GUI", "true").lower() in ("1", "true", "yes")
+DEFAULT_SIM_CONTROLLERS = os.getenv("WEBUI_SIM_WITH_CONTROLLERS", "true").lower() in ("1", "true", "yes")
+DEFAULT_SIM_HELPERS = os.getenv("WEBUI_SIM_HELPERS", "false").lower() in ("1", "true", "yes")
+SIM_LOG_PATH = os.getenv("WEBUI_SIM_LOG", "log/webui_gazebo.log")
 
 
 @dataclass
@@ -59,8 +77,12 @@ class RosBridge(Node):
     """
 
     def __init__(self):
-        # Initialize the underlying rclpy Node with a unique name.
-        super().__init__('webui_cmd_vel_publisher')
+        super().__init__(
+            'webui_cmd_vel_publisher',
+            parameter_overrides=[
+                Parameter('use_sim_time', Parameter.Type.BOOL, USE_SIM_TIME)
+            ]
+        )
 
         # Remember the mode (stamped vs unstamped) as a flag on the node.
         self._use_stamped = USE_STAMPED_VEL
@@ -146,6 +168,101 @@ socketio = SocketIO(app, async_mode='threading', cors_allowed_origins='*')
 
 # Global reference to the RosBridge node (set during startup).
 ros_node: RosBridge | None = None
+_sim_process: Optional[subprocess.Popen] = None
+_sim_log_handle: Optional[object] = None
+_sim_lock = threading.Lock()
+
+
+def _build_sim_command(world: Optional[str], gui: Optional[bool],
+                       with_controllers: Optional[bool],
+                       helper_nodes: Optional[bool]) -> list[str]:
+    cmd = list(DEFAULT_SIM_COMMAND)
+    if world:
+        cmd.append(f"world:={world}")
+    if gui is not None:
+        cmd.append(f"gui:={'true' if gui else 'false'}")
+    if with_controllers is not None:
+        cmd.append(f"with_controllers:={'true' if with_controllers else 'false'}")
+    if helper_nodes is not None:
+        cmd.append(f"start_helper_nodes:={'true' if helper_nodes else 'false'}")
+    return cmd
+
+
+def start_simulation(world: Optional[str] = None,
+                     gui: Optional[bool] = None,
+                     with_controllers: Optional[bool] = None,
+                     helper_nodes: Optional[bool] = None) -> Tuple[bool, str]:
+    """
+    Launch gazebo.launch.py in a subprocess so the web UI can drive the sim.
+    """
+    world = world or DEFAULT_SIM_WORLD or None
+    gui = DEFAULT_SIM_GUI if gui is None else gui
+    with_controllers = DEFAULT_SIM_CONTROLLERS if with_controllers is None else with_controllers
+    helper_nodes = DEFAULT_SIM_HELPERS if helper_nodes is None else helper_nodes
+
+    os.makedirs(os.path.dirname(SIM_LOG_PATH), exist_ok=True)
+
+    with _sim_lock:
+        global _sim_process
+        global _sim_log_handle
+        if _sim_process and _sim_process.poll() is None:
+            return False, "Simulation already running"
+
+        cmd = _build_sim_command(world, gui, with_controllers, helper_nodes)
+        logfile = open(SIM_LOG_PATH, "w")
+        try:
+            _sim_process = subprocess.Popen(
+                cmd,
+                stdout=logfile,
+                stderr=subprocess.STDOUT,
+                cwd=os.getcwd(),
+                env=os.environ.copy(),
+            )
+            _sim_log_handle = logfile
+        except Exception as exc:
+            logfile.close()
+            _sim_process = None
+            _sim_log_handle = None
+            return False, f"Failed to start Gazebo: {exc}"
+
+    return True, f"Started Gazebo (PID {_sim_process.pid if _sim_process else 'unknown'})"
+
+
+def stop_simulation() -> Tuple[bool, str]:
+    with _sim_lock:
+        global _sim_process
+        global _sim_log_handle
+        if not _sim_process or _sim_process.poll() is not None:
+            _sim_process = None
+            if _sim_log_handle:
+                _sim_log_handle.close()
+                _sim_log_handle = None
+            return False, "Simulation not running"
+
+        _sim_process.send_signal(signal.SIGINT)
+        try:
+            _sim_process.wait(timeout=10.0)
+            msg = "Simulation stopped"
+        except subprocess.TimeoutExpired:
+            _sim_process.terminate()
+            msg = "Simulation forced to stop"
+        _sim_process = None
+        if _sim_log_handle:
+            _sim_log_handle.close()
+            _sim_log_handle = None
+
+        return True, msg
+
+
+def simulation_status() -> dict:
+    with _sim_lock:
+        running = _sim_process is not None and _sim_process.poll() is None
+        pid = _sim_process.pid if running and _sim_process else None
+    return {
+        "running": running,
+        "pid": pid,
+        "logfile": SIM_LOG_PATH if running else None,
+    }
 
 
 @app.route('/')
@@ -193,6 +310,40 @@ def http_cmd():
 
     # Return a JSON response (Flask auto-serializes dicts).
     return {'ok': True, 'linear': lin, 'angular': ang}
+
+
+@app.route('/api/sim/status')
+def api_sim_status():
+    """
+    Report whether gazebo.launch.py is currently running (PID, logfile).
+    """
+    return simulation_status()
+
+
+@app.route('/api/sim/start', methods=['POST'])
+def api_sim_start():
+    """
+    Start gazebo.launch.py with optional overrides from the JSON payload:
+      { "world": "...", "gui": true/false, "with_controllers": true/false,
+        "start_helper_nodes": true/false }
+    """
+    payload = request.get_json(silent=True) or {}
+    ok, msg = start_simulation(
+        world=payload.get("world"),
+        gui=payload.get("gui"),
+        with_controllers=payload.get("with_controllers"),
+        helper_nodes=payload.get("start_helper_nodes"),
+    )
+    return {"ok": ok, "message": msg} | simulation_status()
+
+
+@app.route('/api/sim/stop', methods=['POST'])
+def api_sim_stop():
+    """
+    Stop the gazebo subprocess if it is running.
+    """
+    ok, msg = stop_simulation()
+    return {"ok": ok, "message": msg} | simulation_status()
 
 
 @socketio.on('connect')
@@ -269,6 +420,7 @@ def main():
     global ros_node
     ros_node = start_rclpy_in_background()                       # Start ROS node + spin thread
     atexit.register(shutdown_ros)                                # Ensure clean ROS shutdown
+    atexit.register(stop_simulation)
     socketio.run(app, host='0.0.0.0', port=5000)                 # Start the dev server
 
 

@@ -6,6 +6,8 @@
 #include <nav_msgs/msg/odometry.hpp>                 // Published noisy odom estimate
 #include <tf2_ros/transform_broadcaster.hpp>         // TF broadcaster for noisy odom frame
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <string>
+#include <vector>
 
 // NoisyController: clones SimpleController's odometry pipeline but injects
 // configurable Gaussian noise into the wheel encoder readings so downstream
@@ -24,10 +26,13 @@ class NoisyController : public rclcpp::Node {
 
   double wheel_radius_;      // wheel radius (m)
   double wheel_separation_;  // axle track (m)
+  std::vector<std::string> left_wheel_joints_;
+  std::vector<std::string> right_wheel_joints_;
 
   double left_wheel_prev_pos_;   // previous left wheel encoder (rad)
   double right_wheel_prev_pos_;  // previous right wheel encoder (rad)
   rclcpp::Time prev_time_;
+  bool have_prev_time_{false};
 
   double x_;      // integrated x position in odom frame
   double y_;      // integrated y position in odom frame

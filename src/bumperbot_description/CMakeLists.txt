@@ -11,7 +11,7 @@ find_package(ament_cmake REQUIRED)
 # Install static resources straight from the source tree
 # ------------------------------------------------------------------
 install(
-  DIRECTORY meshes urdf launch rviz
+  DIRECTORY meshes urdf launch rviz worlds models photos
   DESTINATION share/${PROJECT_NAME}
 )
 

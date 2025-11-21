@@ -61,16 +61,6 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        caster_front_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        caster_rear_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         wheel_left_link:
           Alpha: 1
           Show Axes: false
@@ -100,10 +90,6 @@ Visualization Manager:
           Value: true
         base_link:
           Value: true
-        caster_front_link:
-          Value: true
-        caster_rear_link:
-          Value: true
         wheel_left_link:
           Value: true
         wheel_right_link:
@@ -116,10 +102,6 @@ Visualization Manager:
       Tree:
         base_footprint:
           base_link:
-            caster_front_link:
-              {}
-            caster_rear_link:
-              {}
             wheel_left_link:
               {}
             wheel_right_link:
