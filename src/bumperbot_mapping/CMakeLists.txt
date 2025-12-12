@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(bumperbot_localization)
+project(bumperbot_mapping)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -7,44 +7,33 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
-
 
 include_directories(include)
 
-add_executable(imu_republisher src/imu_republisher.cpp)
-ament_target_dependencies(imu_republisher rclcpp sensor_msgs)
-
-add_executable(kalman_filter src/kalman_filter.cpp)
-ament_target_dependencies(kalman_filter rclcpp nav_msgs sensor_msgs)
-
-add_executable(odometry_motion_model src/odometry_motion_model.cpp)
-ament_target_dependencies(odometry_motion_model rclcpp tf2 nav_msgs geometry_msgs)
+add_executable(mapping_with_known_poses src/mapping_with_known_poses.cpp)
+ament_target_dependencies(mapping_with_known_poses rclcpp sensor_msgs tf2_ros nav_msgs geometry_msgs tf2)
 
 install(
-  DIRECTORY include/
+  DIRECTORY include
   DESTINATION include
 )
 
 install(TARGETS
-  imu_republisher
-  kalman_filter
-  odometry_motion_model
+  mapping_with_known_poses
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(
-  DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
-install(
-  DIRECTORY config/
-  DESTINATION share/${PROJECT_NAME}/config
+  DIRECTORY config launch maps 
+  DESTINATION share/${PROJECT_NAME}
 )
 
 install(

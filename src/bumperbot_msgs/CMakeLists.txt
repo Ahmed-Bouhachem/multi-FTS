@@ -15,6 +15,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 # Generate C++/Python code for our services
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/Fibonacci.action"
   "srv/AddTwoInts.srv"      # a, b -> sum
   "srv/GetTransform.srv"    # frame_id, child_frame_id -> TransformStamped, success
   DEPENDENCIES geometry_msgs # GetTransform uses geometry_msgs/TransformStamped

@@ -37,11 +37,18 @@ import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from geometry_msgs.msg import Twist, TwistStamped
+from std_msgs.msg import Bool
 
 # Decide at runtime whether to use stamped or unstamped commands based on env.
 # By default, we send UNSTAMPED Twist to match your diff_drive_controller YAML (use_stamped_vel: false).
 USE_STAMPED_VEL = os.getenv("USE_STAMPED_VEL", "0").lower() in ("1", "true", "yes")
 USE_SIM_TIME = os.getenv("WEBUI_USE_SIM_TIME", "1").lower() in ("1", "true", "yes")
+
+# Optional integration with twist_mux + safety_stop. When enabled, the Web UI
+# publishes geometry_msgs/Twist to the twist_mux input (joy_vel by default)
+# instead of directly to /bumperbot_controller/cmd_vel_unstamped.
+USE_TWIST_MUX = os.getenv("WEBUI_USE_TWIST_MUX", "0").lower() in ("1", "true", "yes")
+TWIST_MUX_INPUT_TOPIC = os.getenv("WEBUI_TWIST_MUX_TOPIC", "joy_vel")
 
 # Allow the web UI to start/stop Gazebo via subprocess if desired.
 DEFAULT_SIM_COMMAND = [
@@ -85,20 +92,43 @@ class RosBridge(Node):
         )
 
         # Remember the mode (stamped vs unstamped) as a flag on the node.
-        self._use_stamped = USE_STAMPED_VEL
-
-        # Choose message type and topic name to match diff_drive_controller:
-        # - Stamped: geometry_msgs/TwistStamped on /bumperbot_controller/cmd_vel
-        # - Unstamped: geometry_msgs/Twist on /bumperbot_controller/cmd_vel_unstamped
-        if self._use_stamped:
-            msg_type = TwistStamped
-            topic = '/bumperbot_controller/cmd_vel'
+        # When routing through twist_mux, we always use unstamped Twist.
+        if USE_TWIST_MUX:
+            self._use_stamped = False
         else:
+            self._use_stamped = USE_STAMPED_VEL
+
+        # Choose message type and topic name:
+        # - If using twist_mux: geometry_msgs/Twist on joy_vel (or override)
+        #   so safety_stop and other locks can act on the command stream.
+        # - Otherwise:
+        #   - Stamped: geometry_msgs/TwistStamped on /bumperbot_controller/cmd_vel
+        #   - Unstamped: geometry_msgs/Twist on /bumperbot_controller/cmd_vel_unstamped
+        if USE_TWIST_MUX:
             msg_type = Twist
-            topic = '/bumperbot_controller/cmd_vel_unstamped'
+            topic = f'/{TWIST_MUX_INPUT_TOPIC.lstrip("/")}'
+        else:
+            if self._use_stamped:
+                msg_type = TwistStamped
+                topic = '/bumperbot_controller/cmd_vel'
+            else:
+                msg_type = Twist
+                topic = '/bumperbot_controller/cmd_vel_unstamped'
 
         # Create the ROS 2 publisher with queue size 10 (depth of outgoing messages).
         self._publisher = self.create_publisher(msg_type, topic, 10)
+        self.get_logger().info(
+            f"WebUI RosBridge publishing {msg_type.__name__} commands to '{topic}'"
+        )
+
+        # Track safety_stop state (true when an obstacle is in the danger zone).
+        self._safety_stop_active = False
+        self._safety_sub = self.create_subscription(
+            Bool,
+            'safety_stop',
+            self._on_safety_stop,
+            10,
+        )
 
         # Initialize the last commanded velocity to zero (robot stays still initially).
         self._last_cmd = VelCmd(0.0, 0.0)
@@ -107,25 +137,42 @@ class RosBridge(Node):
         # This continuously re-publishes the latest command to avoid controller timeout.
         self._timer = self.create_timer(0.05, self._tick)
 
+    def _on_safety_stop(self, msg: Bool) -> None:
+        """
+        Remember whether safety_stop is active.
+
+        We use this only to gate forward commands from the Web UI so that:
+        - When safety_stop is true (danger zone), we block forward motion.
+        - Backwards and pure rotation are still allowed so the user can escape.
+        """
+        self._safety_stop_active = bool(msg.data)
+
     def _tick(self):
         """
         Timer callback executed at 20 Hz.
         It packages the last commanded velocity into the correct message type
-        and publishes it on /bumperbot_controller/cmd_vel.
+        and publishes it on the selected cmd_vel topic.
         """
+        # Apply safety_stop: when active, block forward motion but still allow
+        # backing up and pure rotation so the user can move away from obstacles.
+        linear = float(self._last_cmd.linear)
+        angular = float(self._last_cmd.angular)
+        if self._safety_stop_active and linear > 0.0:
+            linear = 0.0
+
         if self._use_stamped:
             # Build a TwistStamped message when stamped mode is enabled.
             msg = TwistStamped()
             # Stamp with the node's clock (sim time in Gazebo if /clock is active).
             msg.header.stamp = self.get_clock().now().to_msg()
             # frame_id is optional for cmd_vel; can be set to 'base_footprint' if desired.
-            msg.twist.linear.x = float(self._last_cmd.linear)   # forward/backward
-            msg.twist.angular.z = float(self._last_cmd.angular) # yaw left/right
+            msg.twist.linear.x = linear   # forward/backward
+            msg.twist.angular.z = angular # yaw left/right
         else:
             # Build a classic (unstamped) Twist message.
             msg = Twist()
-            msg.linear.x = float(self._last_cmd.linear)         # forward/backward
-            msg.angular.z = float(self._last_cmd.angular)       # yaw left/right
+            msg.linear.x = linear         # forward/backward
+            msg.angular.z = angular       # yaw left/right
 
         # Publish the message to the controller's cmd_vel topic.
         self._publisher.publish(msg)

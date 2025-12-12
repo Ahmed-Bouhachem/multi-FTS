@@ -57,6 +57,13 @@ ament_target_dependencies(noisy_controller
   nav_msgs
 )
 
+# Twist Relay
+add_executable(twist_relay src/twist_relay.cpp)
+
+ament_target_dependencies(twist_relay
+  rclcpp
+  geometry_msgs
+)
 
 # ---- Install headers for downstream includes ----
 install(
@@ -68,6 +75,7 @@ install(
 install(TARGETS
   simple_controller
   noisy_controller
+  twist_relay
   DESTINATION lib/${PROJECT_NAME}
 )
 

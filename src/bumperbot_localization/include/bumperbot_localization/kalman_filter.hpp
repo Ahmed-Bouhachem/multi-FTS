@@ -4,10 +4,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
-class KalmanFilter : public rclcpp::Node 
+class OdometryMotionModel : public rclcpp::Node 
 {
     public : 
-        KalmanFilter(const std::string & name);
+        OdometryMotionModel(const std::string & name);
     private :
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_ ;
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_ ;
@@ -36,4 +36,4 @@ class KalmanFilter : public rclcpp::Node
 
 };
 
-#endif 
+#endif //KALMAN_FILTER_HPP

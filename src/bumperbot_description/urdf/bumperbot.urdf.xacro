@@ -1,72 +1,18 @@
 <?xml version="1.0"?>
-<!--
-  Bumperbot URDF (xacro): describes a simple differential drive robot base with two drive wheels
-  and two caster wheels. Visuals reference STL meshes packaged under bumperbot_description/meshes.
 
-  Gazebo classic tags adjust materials and contact properties for reasonable behavior in simulation.
--->
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <!-- Gazebo-specific visuals and contact/friction parameters (inlined) -->
-  <gazebo reference="base_link">
-    <material>Gazebo/Blue</material>
-  </gazebo>
+  <!-- Start GZ or Ignition depending on ROS 2 Version -->
+  <xacro:arg name="is_ignition" default="true"/>
 
-  <gazebo reference="wheel_right_link">
-    <material>Gazebo/Black</material>
-  </gazebo>
+  <!-- Load Simulated or Real Hardware Interfaces -->
+  <xacro:arg name="is_sim" default="true"/>
 
-  <gazebo reference="wheel_left_link">
-    <material>Gazebo/Black</material>
-  </gazebo>
+  <!-- Include Gazebo Parameters -->
+  <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_gazebo.xacro" />
 
-  <gazebo reference="caster_front_link">
-    <material>Gazebo/Red</material>
-  </gazebo>
-
-  <gazebo reference="caster_rear_link">
-    <material>Gazebo/Red</material>
-  </gazebo>
-
-  <!-- High friction on drive wheels to avoid slipping in simple worlds -->
-  <gazebo reference="wheel_right_link">
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-    <kp>1000000.0</kp>
-    <kd>10.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
-    <fdir1>1 0 0</fdir1>
-  </gazebo>
-
-  <gazebo reference="wheel_left_link">
-    <mu1>1.0</mu1>
-    <mu2>1.0</mu2>
-    <kp>1000000.0</kp>
-    <kd>10.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
-    <fdir1>1 0 0</fdir1>
-  </gazebo>
-
-  <!-- Lower friction on casters so they slide/rotate easily -->
-  <gazebo reference="caster_front_link">
-    <mu1>0.1</mu1>
-    <mu2>0.1</mu2>
-    <kp>1000000.0</kp>
-    <kd>100.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
-  </gazebo>
-
-  <gazebo reference="caster_rear_link">
-    <mu1>0.1</mu1>
-    <mu2>0.1</mu2>
-    <kp>1000000.0</kp>
-    <kd>100.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
-  </gazebo>
+  <!-- Include ros2_control Plugins -->
+  <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_ros2_control.xacro" />
 
   <link name="base_footprint"/>
   
@@ -83,6 +29,7 @@
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/base_link.STL" />
       </geometry>
+      <material name="black"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -111,6 +58,7 @@
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/wheel_right_link.STL" />
       </geometry>
+      <material name="blue"/>
     </visual>
     <collision>
       <origin xyz="0 -0.015 0" rpy="1.57 0 0" />
@@ -127,7 +75,8 @@
     <axis xyz="0 1 0" />
   </joint>
   
-  <link name="wheel_left_link">
+  <link
+    name="wheel_left_link">
     <inertial>
       <origin xyz="0 0.014 0" rpy="0 0 0" />
       <mass value="0.0530086043217644" />
@@ -140,6 +89,7 @@
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/wheel_left_link.STL" />
       </geometry>
+      <material name="blue"/>
     </visual>
     <collision>
       <origin xyz="0 0.015 0" rpy="-1.57 0 0" />
@@ -169,6 +119,7 @@
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/caster_front_link.STL" />
       </geometry>
+      <material name="silver"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -198,6 +149,7 @@
       <geometry>
         <mesh filename="package://bumperbot_description/meshes/caster_rear_link.STL" />
       </geometry>
+      <material name="silver"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -214,29 +166,77 @@
     <axis xyz="0 0 0" />
   </joint>
 
-  <ros2_control name="BumperBotSystem" type="system">
-    <hardware>
-      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
-    </hardware>
+  <link name="imu_link">
+    <inertial>
+      <origin xyz="-0.00552433659106688 0.000168210391520346 0.000514000497342681" rpy="0 0 0" />
+      <mass value="0.000528415362211671" />
+      <inertia ixx="1.46176048428261E-08" ixy="1.40015117949421E-10" ixz="-1.99633872937403E-12"
+               iyy="8.59662482954888E-09" iyz="7.52375112767959E-12"
+               izz="2.30279421279312E-08" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://bumperbot_description/meshes/imu_link.STL" />
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://bumperbot_description/meshes/imu_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="imu_joint" type="fixed">
+    <origin xyz="0 0 0.0698986241758014" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="imu_link" />
+    <axis xyz="0 0 0" />
+  </joint>
 
-    <joint name="wheel_right_joint">
-      <command_interface name="velocity"/>
-      <state_interface   name="position"/>
-      <state_interface   name="velocity"/>
-    </joint>
+  <link name="laser_link">
+    <inertial>
+      <origin xyz="-0.011945780406062 -0.000381929217680526 -0.0170649378129477" rpy="0 0 0" />
+      <mass value="0.073084435549317" />
+      <inertia ixx="1.96074931730795E-05" ixy="-3.62091076640009E-07" ixz="4.28230084046735E-07"
+               iyy="2.40983835136327E-05" iyz="1.50180909250652E-08"
+               izz="4.14184164228595E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://bumperbot_description/meshes/laser_link.STL" />
+      </geometry>
+      <material name="dark_grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://bumperbot_description/meshes/laser_link.STL" />
+      </geometry>
+    </collision>
+  </link>
 
-    <joint name="wheel_left_joint">
-      <command_interface name="velocity"/>
-      <state_interface   name="position"/>
-      <state_interface   name="velocity"/>
-    </joint>
-  </ros2_control>
+  <joint name="laser_joint" type="fixed">
+    <origin xyz="-0.0050526 -0.0023221 0.1208" rpy="0 0 3.14" />
+    <parent link="base_link" />
+    <child link="laser_link" />
+    <axis xyz="0 0 0" />
+  </joint>
 
-  <gazebo>
-    <plugin name="gz_ros2_control::GazeboSimROS2ControlPlugin"
-            filename="gz_ros2_control-system">
-      <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
-    </plugin>
-  </gazebo>
+  <material name="blue">
+    <color rgba="0 0 1 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0 0 0 1"/>
+  </material>
+  <material name="silver">
+    <color rgba="0.79 0.82 0.93 1"/>
+  </material>
+  <material name="dark_grey">
+    <color rgba="0.3 0.3 0.3 1"/>
+  </material>
 
 </robot>

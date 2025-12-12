@@ -63,8 +63,8 @@ def generate_launch_description():
 
     use_simple_controller_arg = DeclareLaunchArgument(
         "use_simple_controller",
-        default_value="True",
-        description="If True, spawn simple_velocity_controller (+ simple_controller node); else spawn bumperbot_controller."
+        default_value="False",
+        description="If True, spawn simple_velocity_controller (+ simple_controller node); else spawn bumperbot_controller (diff_drive)."
     )
 
     wheel_radius_error_arg = DeclareLaunchArgument(
@@ -104,7 +104,7 @@ def generate_launch_description():
             "--controller-manager", "/controller_manager"
         ],
         condition=IfCondition(
-            PythonExpression([use_simple_controller, " == 'False'"])
+            PythonExpression(["'", use_simple_controller, "' == 'False'"])
         ),
         output="screen"
     )
@@ -118,7 +118,7 @@ def generate_launch_description():
             "--controller-manager", "/controller_manager"
         ],
         condition=IfCondition(
-            PythonExpression([use_simple_controller, " == 'True'"])
+            PythonExpression(["'", use_simple_controller, "' == 'True'"])
         ),
         output="screen"
     )
@@ -135,8 +135,8 @@ def generate_launch_description():
         }],
         condition=IfCondition(
             PythonExpression([
-                use_simple_controller, " == 'True' and ",
-                use_python, " == 'True'"
+                "'", use_simple_controller, "' == 'True' and '",
+                use_python, "' == 'True'"
             ])
         ),
         output="screen"
@@ -151,8 +151,8 @@ def generate_launch_description():
         }],
         condition=IfCondition(
             PythonExpression([
-                use_simple_controller, " == 'True' and not (",
-                use_python, " == 'True')"
+                "'", use_simple_controller, "' == 'True' and not ('",
+                use_python, "' == 'True')"
             ])
         ),
         output="screen"

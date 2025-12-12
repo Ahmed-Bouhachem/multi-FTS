@@ -1,0 +1,8 @@
+# Goal: number of elements to generate in the sequence
+int32 order
+---
+# Result: full Fibonacci sequence
+int32[] sequence
+---
+# Feedback: partial sequence while executing
+int32[] partial_sequence
