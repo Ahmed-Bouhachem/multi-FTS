@@ -7,6 +7,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
 namespace bumperbot_planning {
+    // Construct the A* planner node and configure TF, subscriptions and publishers.
     AStarPlanner::AStarPlanner() : Node("a_star_node") {
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -31,6 +32,7 @@ namespace bumperbot_planning {
 
     }
 
+    // Cache the OccupancyGrid and initialize the visited map.
     void AStarPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr map)
     {
         map_ = map;
@@ -39,6 +41,7 @@ namespace bumperbot_planning {
         visited_map_.data = std::vector<int8_t>(visited_map_.info.height * visited_map_.info.width, -1);
     }
 
+    // Goal callback: run A* to compute a path from the robot to the requested goal.
     void AStarPlanner::goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr pose)
     {
         if (!map_) {
@@ -71,6 +74,7 @@ namespace bumperbot_planning {
         }
     }
 
+    // Core A* search loop operating on the grid nodes.
     nav_msgs::msg::Path AStarPlanner::plan(const geometry_msgs::msg::Pose & start,
                                               const geometry_msgs::msg::Pose & goal)
     {
@@ -129,6 +133,7 @@ namespace bumperbot_planning {
         return path;
     }
 
+    // Convert a world-frame pose to a grid node.
     GraphNode AStarPlanner::worldToGrid(const geometry_msgs::msg::Pose & pose)
     {
         int grid_x = static_cast<int>(
@@ -138,23 +143,27 @@ namespace bumperbot_planning {
         return GraphNode(grid_x, grid_y);
     }
 
+    // Return the Manhattan distance between a node and goal, used as heuristic.
     double AStarPlanner::manhattanDistance(const GraphNode & node, const GraphNode & goal_node)
     {
         return abs(node.x - goal_node.x) + abs(node.y - goal_node.y);
     }
 
+    // True if the node indexes a valid cell inside the map.
     bool AStarPlanner::poseOnMap(const GraphNode & node)
     {
         return node.x >= 0 && node.x < static_cast<int>(map_->info.width) &&
                node.y >= 0 && node.y < static_cast<int>(map_->info.height);
     }
 
+    // Convert a node to a linear OccupancyGrid cell index.
     unsigned AStarPlanner::poseToCell(const GraphNode & node)
     {
         return static_cast<unsigned>(node.y) * map_->info.width +
                static_cast<unsigned>(node.x);
     }
 
+    // Convert a grid node back to a world-frame pose on the map.
     geometry_msgs::msg::Pose AStarPlanner::gridToWorld(const GraphNode & node)
     {
         geometry_msgs::msg::Pose pose;
@@ -165,6 +174,7 @@ namespace bumperbot_planning {
 
 }
 
+// Program entry point: initialize ROS 2 and spin the A* planner node.
 int main(int argc,char **argv)
 {  
     rclcpp::init(argc, argv);

@@ -12,12 +12,14 @@ using namespace std::chrono_literals;
 class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
 {
     public:
+    // Construct the lifecycle node and optionally enable intra-process communications.
     explicit SimpleLifecycleNode(const std::string & node_name, bool intra_process_comes = false)
     : rclcpp_lifecycle::LifecycleNode(node_name, rclcpp::NodeOptions().use_intra_process_comms(intra_process_comes))
     {
 
     }
 
+    // Configure state callback: subscribe to the chatter topic.
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn on_configure(const rclcpp_lifecycle::State &)
     {
         sub_ = create_subscription<std_msgs::msg::String>("chatter", 10, std::bind(&SimpleLifecycleNode::msgCallback, this, _1));
@@ -25,6 +27,7 @@ class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
         return  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
     }
 
+    // Shutdown state callback: release resources.
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &)
     {
         sub_.reset();
@@ -32,6 +35,7 @@ class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
         return  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
     }
 
+    // Cleanup state callback: reset the subscription.
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn on_cleanup(const rclcpp_lifecycle::State &)
     {
         sub_.reset();
@@ -39,6 +43,7 @@ class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
         return  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
     }
 
+    // Activate state callback: transition to active and simulate work.
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn on_activate(const rclcpp_lifecycle::State & state)
     {
         LifecycleNode::on_activate(state);
@@ -47,6 +52,7 @@ class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
         return  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
     }
 
+    // Deactivate state callback: transition back to inactive.
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state)
     {
         LifecycleNode::on_deactivate(state);
@@ -54,6 +60,7 @@ class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
         return  rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
     }
 
+    // Only log incoming messages when the node is in the active state.
     void msgCallback(const std_msgs::msg::String & msg)
     {
         auto state = get_current_state();
@@ -67,6 +74,7 @@ class SimpleLifecycleNode : public rclcpp_lifecycle::LifecycleNode
         rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_;
 };
 
+// Program entry point: spin the lifecycle node using a SingleThreadedExecutor.
 int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);

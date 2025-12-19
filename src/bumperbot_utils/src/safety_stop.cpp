@@ -27,6 +27,7 @@ enum State{
 class SafetyStop : public rclcpp::Node
 {
 public:
+  // Construct the safety-stop node and initialize parameters, topics and visualization markers.
   SafetyStop()
   : Node("safety_stop_node"),
     is_first_msg_(true),
@@ -92,6 +93,7 @@ private:
   rclcpp_action::Client<twist_mux_msgs::action::JoyTurbo>::SharedPtr decrease_speed_client_;
   rclcpp_action::Client<twist_mux_msgs::action::JoyTurbo>::SharedPtr increase_speed_client_;
 
+  // LaserScan callback: classify obstacle distance and publish safety_stop/zones (and optional actions).
   void laserCallback(const sensor_msgs::msg::LaserScan &msg)
   {
     // Compute the new state based on the minimum valid range in the scan.
@@ -161,6 +163,7 @@ private:
   }
 };
 
+// Program entry point: create and spin the SafetyStop node.
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);

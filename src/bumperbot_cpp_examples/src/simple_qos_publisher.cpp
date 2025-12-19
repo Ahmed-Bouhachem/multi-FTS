@@ -10,6 +10,7 @@ using namespace std::chrono_literals;
 class SimpleQosPublisher : public rclcpp::Node
 {
 public:
+  // Construct the node, configure QoS from parameters and start a periodic publisher.
   SimpleQosPublisher() : Node("simple_qos_publisher"), qos_profile_pub_(10), counter_(0)
   {
     declare_parameter<std::string>("reliability", "system_default");
@@ -65,6 +66,7 @@ public:
     RCLCPP_INFO(get_logger(), "Publishing at 1 Hz");
   }
 
+  // Timer callback: publish a string message using the configured QoS profile.
   void timerCallback()
   {
     auto message = std_msgs::msg::String();
@@ -79,6 +81,7 @@ private:
   unsigned int counter_;
 };
 
+// Program entry point: create and spin the SimpleQosPublisher node.
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);

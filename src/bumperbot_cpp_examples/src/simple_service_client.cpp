@@ -7,6 +7,7 @@ using namespace std::placeholders;
 
 class SimpleServiceClient : public rclcpp::Node {
     public:
+        // Construct the service client node and immediately call AddTwoInts with the given operands.
         SimpleServiceClient(int a, int b) : Node("simple_service_cerver")
 
         {

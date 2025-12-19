@@ -6,6 +6,7 @@
 
 using std::placeholders::_1;
 
+// Compute the smallest signed difference between two angles a and b.
 double angle_diff(double a, double b)
 {
   a = atan2(sin(a), cos(a));
@@ -22,6 +23,7 @@ double angle_diff(double a, double b)
   }
 }
 
+// Construct the odometry motion model node and configure parameters, subscribers and publishers.
 OdometryMotionModel::OdometryMotionModel(const std::string & name)
                     :Node(name)
                     ,alpha1_(0.0)
@@ -59,6 +61,7 @@ OdometryMotionModel::OdometryMotionModel(const std::string & name)
     pose_array_pub_ = create_publisher<geometry_msgs::msg::PoseArray>("odometry_modion_model/samples", 10);
 }
 
+// Odometry callback: apply the probabilistic motion model to update all pose samples.
 void OdometryMotionModel::odomCallback(const nav_msgs::msg::Odometry &odom)
     {
         tf2::Quaternion q(odom.pose.pose.orientation.x, 
@@ -132,6 +135,7 @@ void OdometryMotionModel::odomCallback(const nav_msgs::msg::Odometry &odom)
         pose_array_pub_->publish(samples_);
     }
 
+// Program entry point: initialize ROS 2 and spin the OdometryMotionModel node.
 int main(int argc, char* argv[])
 {
     rclcpp::init(argc, argv);

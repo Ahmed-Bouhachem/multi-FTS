@@ -9,6 +9,7 @@ using std::placeholders::_1;
 class SimpleQosSubscriber : public rclcpp::Node
 {
 public:
+  // Construct the node, configure QoS from parameters and subscribe to 'chatter'.
   SimpleQosSubscriber() : Node("simple_qos_subscriber"), qos_profile_sub_(10)
   {
     declare_parameter<std::string>("reliability", "system_default");
@@ -67,6 +68,7 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_;
   rclcpp::QoS qos_profile_sub_;
 
+  // Subscription callback: log the received string message.
   void msgCallback(const std_msgs::msg::String &msg) const
   {
     RCLCPP_INFO_STREAM(this->get_logger(), "I heard: " << msg.data.c_str());
@@ -74,6 +76,7 @@ private:
 };
 
 
+// Program entry point: create and spin the SimpleQosSubscriber node.
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);

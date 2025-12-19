@@ -7,6 +7,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 
 namespace bumperbot_planning {
+    // Construct the Dijkstra planner node and set up TF, subscriptions and publishers.
     AStarPlanner::AStarPlanner() : Node("dijkstra_node") {
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -31,6 +32,7 @@ namespace bumperbot_planning {
 
     }
 
+    // Cache the latest OccupancyGrid and reset the visited map.
     void AStarPlanner::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr map)
     {
         map_ = map;
@@ -39,6 +41,7 @@ namespace bumperbot_planning {
         visited_map_.data = std::vector<int8_t>(visited_map_.info.height * visited_map_.info.width, -1);
     }
 
+    // Goal callback: run Dijkstra to compute a path from the robot to the requested goal.
     void AStarPlanner::goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr pose)
     {
         if (!map_) {
@@ -71,6 +74,7 @@ namespace bumperbot_planning {
         }
     }
 
+    // Core Dijkstra search loop operating on the grid representation.
     nav_msgs::msg::Path AStarPlanner::plan(const geometry_msgs::msg::Pose & start,
                                               const geometry_msgs::msg::Pose & goal)
     {
@@ -127,6 +131,7 @@ namespace bumperbot_planning {
         return path;
     }
 
+    // Convert a world-frame pose to a grid node index.
     GraphNode AStarPlanner::worldToGrid(const geometry_msgs::msg::Pose & pose)
     {
         int grid_x = static_cast<int>(
@@ -136,18 +141,21 @@ namespace bumperbot_planning {
         return GraphNode(grid_x, grid_y);
     }
 
+    // Return true if the grid node lies inside the current map bounds.
     bool AStarPlanner::poseOnMap(const GraphNode & node)
     {
         return node.x >= 0 && node.x < static_cast<int>(map_->info.width) &&
                node.y >= 0 && node.y < static_cast<int>(map_->info.height);
     }
 
+    // Convert a grid node into a linear OccupancyGrid cell index.
     unsigned AStarPlanner::poseToCell(const GraphNode & node)
     {
         return static_cast<unsigned>(node.y) * map_->info.width +
                static_cast<unsigned>(node.x);
     }
 
+    // Convert a grid node back into a world-frame pose on the map.
     geometry_msgs::msg::Pose AStarPlanner::gridToWorld(const GraphNode & node)
     {
         geometry_msgs::msg::Pose pose;
@@ -158,6 +166,7 @@ namespace bumperbot_planning {
 
 }
 
+// Program entry point: initialize ROS 2 and spin the Dijkstra planner node.
 int main(int argc,char **argv)
 {  
     rclcpp::init(argc, argv);

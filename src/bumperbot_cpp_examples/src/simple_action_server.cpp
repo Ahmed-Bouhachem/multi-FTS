@@ -14,6 +14,7 @@ namespace bumperbot_cpp_examples
 class SimpleActionServer : public rclcpp::Node
 {
 public:
+  // Construct the action server node and start listening for Fibonacci goals.
   explicit SimpleActionServer(const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
     : Node("simple_action_server", options)
   {
@@ -27,6 +28,7 @@ public:
 private:
   rclcpp_action::Server<bumperbot_msgs::action::Fibonacci>::SharedPtr action_server_;
 
+  // Decide whether to accept or reject an incoming goal request.
   rclcpp_action::GoalResponse goalCallback(
       const rclcpp_action::GoalUUID& uuid,
       std::shared_ptr<const bumperbot_msgs::action::Fibonacci::Goal> goal)
@@ -36,6 +38,7 @@ private:
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
 
+  // Handle a cancellation request for an active goal.
   rclcpp_action::CancelResponse cancelCallback(
       const std::shared_ptr<rclcpp_action::ServerGoalHandle<bumperbot_msgs::action::Fibonacci>> goal_handle)
   {
@@ -44,6 +47,7 @@ private:
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
+  // Start processing an accepted goal on a background thread.
   void acceptedCallback(
       const std::shared_ptr<rclcpp_action::ServerGoalHandle<bumperbot_msgs::action::Fibonacci>> goal_handle)
   {
@@ -51,6 +55,7 @@ private:
     std::thread{ std::bind(&SimpleActionServer::execute, this, _1), goal_handle }.detach();
   }
 
+  // Execute the Fibonacci action: publish feedback and eventually return a result.
   void execute(const std::shared_ptr<rclcpp_action::ServerGoalHandle<bumperbot_msgs::action::Fibonacci>> goal_handle)
   {
     RCLCPP_INFO(get_logger(), "Executing goal");

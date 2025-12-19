@@ -5,12 +5,16 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include<geometry_msgs/msg/pose_array.hpp>
 
+// OdometryMotionModel: samples a set of poses using a probabilistic
+// differential-drive motion model driven by wheel odometry.
 class OdometryMotionModel : public rclcpp::Node 
 {
     public : 
+        // Construct the node with the given name and allocate pose samples.
         OdometryMotionModel(const std::string & name);
 
     private :
+        // Odometry subscription callback used to propagate the sample set.
         void odomCallback(const nav_msgs::msg::Odometry &);
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_ ;

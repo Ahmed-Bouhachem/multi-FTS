@@ -7,6 +7,7 @@ using std::placeholders::_1;
 class TwistRelay : public rclcpp::Node
 {
     public:
+        // Construct the twist relay node and set up the necessary relays.
         TwistRelay() : Node("twist_relay")
         {
             controller_sub_ = create_subscription<geometry_msgs::msg::Twist>(
@@ -38,6 +39,7 @@ class TwistRelay : public rclcpp::Node
         rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr joy_sub_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr joy_pub_;
 
+        // Controller-side callback: stamp an incoming Twist and republish as TwistStamped.
         void controller_twist_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
         {
             geometry_msgs::msg::TwistStamped twist_stamped;
@@ -46,6 +48,7 @@ class TwistRelay : public rclcpp::Node
             controller_pub_->publish(twist_stamped);
         }
 
+        // Joystick-side callback: strip the header from a TwistStamped and republish as Twist.
         void joy_twist_callback(const geometry_msgs::msg::TwistStamped::SharedPtr msg)
         {
             geometry_msgs::msg::Twist twist;
@@ -54,6 +57,7 @@ class TwistRelay : public rclcpp::Node
         }
 };
 
+// Program entry point: create and spin the TwistRelay node.
 int main(int argc, char * argv[]){
 
     rclcpp::init(argc, argv);

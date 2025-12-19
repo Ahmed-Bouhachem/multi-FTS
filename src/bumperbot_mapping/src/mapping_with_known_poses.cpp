@@ -14,6 +14,7 @@ using namespace std::placeholders;
 namespace bumperbot_mapping
 {
 
+    // Convert world coordinates (px, py) to an integer cell pose in the map grid.
     Pose coordinatesToPose(const double px, const double py, const nav_msgs::msg::MapMetaData & map_info)
     {
         Pose pose;
@@ -22,17 +23,20 @@ namespace bumperbot_mapping
         return pose;
     }
 
+    // Check whether a grid pose lies inside the occupancy grid bounds.
     bool poseOnMap(const Pose & pose, const nav_msgs::msg::MapMetaData & map_info)
     {
         return pose.x < static_cast<int>(map_info.width)  && pose.x >= 0 &&
             pose.y < static_cast<int>(map_info.height) && pose.y >= 0;
     }
 
+    // Convert a grid pose (x, y) into a linear cell index.
     unsigned int poseToCell(const Pose & pose, const nav_msgs::msg::MapMetaData & map_info)
     {
         return map_info.width * pose.y + pose.x;
     }
 
+    // Compute the discrete line between two grid cells using Bresenham's algorithm.
     std::vector<Pose> bresenham(const Pose & start, const Pose & end)
     {
         // Implementation of Bresenham's line drawing algorithm
@@ -84,6 +88,7 @@ namespace bumperbot_mapping
 
         return line;
     }
+    // Inverse sensor model: mark the cells along a beam as free and the end cell as occupied.
     std::vector<std::pair<Pose, double>> inverseSensorModel(const Pose & p_robot, const Pose & p_beam)
     {
         std::vector<std::pair<Pose, double>> occ_values;
@@ -100,16 +105,19 @@ namespace bumperbot_mapping
     }
 
 
+    // Convert a probability value p in (0,1) to log-odds space.
     double prob2logodds(double p)
     {
         return std::log(p /(1 - p));
     }
 
+    // Convert a log-odds value back to a standard probability.
     double logodds2prob(double l)
     {
         return 1 - (1 / (1 + std::exp(l)));
     }
 
+    // Construct the mapping node and initialize the occupancy grid and TF objects.
     MappingWithKnownPoses::MappingWithKnownPoses(const std::string & name) : rclcpp::Node(name)
     {
         declare_parameter<double>("width", 50.0);
@@ -147,6 +155,7 @@ namespace bumperbot_mapping
 
     }
 
+    // LaserScan callback: update the log-odds map using the inverse sensor model.
     void MappingWithKnownPoses::scanCallback(const sensor_msgs::msg::LaserScan &scan)
     {   
         geometry_msgs::msg::TransformStamped t;
@@ -196,6 +205,7 @@ namespace bumperbot_mapping
 
     }
 
+    // Timer callback: convert the internal log-odds map to OccupancyGrid and publish it.
     void MappingWithKnownPoses::timerCallback()
     {
         // Convert to occupancy grid and publish
@@ -208,6 +218,7 @@ namespace bumperbot_mapping
 
 }
 
+// Program entry point: create and spin the MappingWithKnownPoses node.
 int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);

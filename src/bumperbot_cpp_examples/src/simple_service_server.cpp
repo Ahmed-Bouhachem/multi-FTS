@@ -6,6 +6,7 @@ using namespace std::placeholders;
 
 class SimpleServiceServer : public rclcpp::Node {
     public:
+        // Construct the service server node and advertise the AddTwoInts service.
         SimpleServiceServer() : Node("simple_service_server") 
         {
             service_ = create_service<bumperbot_msgs::srv::AddTwoInts>("add_two_ints",

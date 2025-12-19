@@ -14,6 +14,7 @@ namespace bumperbot_cpp_examples
 class SimpleActionClient : public rclcpp::Node
 {
 public:
+  // Construct the action client node and start a periodic timer to send a goal.
   explicit SimpleActionClient(const rclcpp::NodeOptions& options)
     : Node("simple_action_client", options)
   {
@@ -25,6 +26,7 @@ private:
   rclcpp_action::Client<bumperbot_msgs::action::Fibonacci>::SharedPtr client_;
   rclcpp::TimerBase::SharedPtr timer_;
 
+  // Timer callback: create and send a Fibonacci goal to the action server.
   void timerCallback()
   {
     timer_->cancel();
@@ -51,6 +53,7 @@ private:
     client_->async_send_goal(goal_msg, send_goal_options);
   }
 
+  // Goal response callback: report whether the server accepted or rejected the goal.
   void goalCallback(const rclcpp_action::ClientGoalHandle<bumperbot_msgs::action::Fibonacci>::SharedPtr& goal_handle)
   {
     if (!goal_handle)
@@ -63,6 +66,7 @@ private:
     }
   }
 
+  // Feedback callback: log each partial sequence element as it is received.
   void feedbackCallback(rclcpp_action::ClientGoalHandle<bumperbot_msgs::action::Fibonacci>::SharedPtr,
                         const std::shared_ptr<const bumperbot_msgs::action::Fibonacci::Feedback> feedback)
   {
@@ -75,6 +79,7 @@ private:
     RCLCPP_INFO(get_logger(), ss.str().c_str());
   }
 
+  // Result callback: inspect the final result and shut down the node.
   void resultCallback(
       const rclcpp_action::ClientGoalHandle<bumperbot_msgs::action::Fibonacci>::WrappedResult& result)
   {

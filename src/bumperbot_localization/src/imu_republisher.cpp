@@ -5,6 +5,7 @@ using namespace std::chrono_literals;
 
 rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
 
+// IMU subscription callback: rewrite the frame_id and republish the message.
 void imuCallback(const sensor_msgs::msg::Imu& imu)
 {
     sensor_msgs::msg::Imu new_imu;
@@ -13,6 +14,7 @@ void imuCallback(const sensor_msgs::msg::Imu& imu)
     imu_pub->publish(new_imu);
 }
 
+// Program entry point: create the IMU republisher node and spin.
 int main(int argc, char* argv[])
 {   
     rclcpp::init(argc, argv);
