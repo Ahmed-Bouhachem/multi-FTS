@@ -61,14 +61,32 @@ namespace bumperbot_motion
         return;
     }
 
-   /*if(!transformPlan(robot_pose.header.frame_id)){
+    if(!transformPlan(robot_pose.header.frame_id)){
         RCLCPP_ERROR(get_logger(), "Unable to transform Plan in robot's frame");
-        return;*/
-
-    RCLCPP_INFO(get_logger(), "frame_id Robot Pose: %s", robot_pose.header.frame_id.c_str());
-    RCLCPP_INFO(get_logger(), "frame_id Global Pose: %s", global_plan_.header.frame_id.c_str());
+        return;
+    }
 }
-    
+
+bool PDMotionPlanner::transformPlan(const std::string & frame)
+{
+    if(global_plan_.header.frame_id == frame){
+        return true;
+    }
+    geometry_msgs::msg::TransformStamped transform;
+    try{
+        transform = tf_buffer_->lookupTransform(frame, global_plan_.header.frame_id, tf2::TimePointZero);
+    } catch (tf2::ExtrapolationException & ex) {
+        RCLCPP_ERROR_STREAM(get_logger(), "Couldn't transform plan from frame " <<
+        global_plan_.header.frame_id << " to frame " << frame);
+        return false;
+    }
+    for(auto & pose : global_plan_.poses){
+        tf2::doTransform(pose, pose, transform);
+    }
+    global_plan_.header.frame_id = frame;
+    return true;
+}
+
 }
 
 int main(int argc, char ** argv) {
