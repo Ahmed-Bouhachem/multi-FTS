@@ -28,6 +28,9 @@ set(dependencies
 add_executable(pd_motion_planner src/pd_motion_planner.cpp)
 ament_target_dependencies(pd_motion_planner ${dependencies})
 
+add_executable(pure_pursuit src/pure_pursuit.cpp)
+ament_target_dependencies(pure_pursuit ${dependencies})
+
 install(
   DIRECTORY include
   DESTINATION include
@@ -35,6 +38,7 @@ install(
 
 install(TARGETS
   pd_motion_planner
+  pure_pursuit
   DESTINATION lib/${PROJECT_NAME}
 )
 

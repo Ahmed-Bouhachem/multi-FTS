@@ -285,7 +285,43 @@ bash scripts/run_turtlesim_kinematics.sh --background
 
 ---
 
-## 9. Git: Push Your Changes
+## 9. Path Following Controllers (A* + PD / Pure Pursuit)
+
+Two motion controllers are provided in `bumperbot_motion` for following grid paths produced by the A* planner:
+
+- `pd_motion_planner` – PD controller that tracks the path using a look‑ahead point.
+- `pure_pursuit` – classic pure‑pursuit controller using a carrot point and curvature.
+
+Both consume the path from `/a_star/path` and publish velocity commands to the diff‑drive controller on `/bumperbot_controller/cmd_vel_unstamped`.
+
+Typical workflow:
+
+```bash
+# Terminal 1: Gazebo + controllers (+ optional SLAM or localization)
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch bumperbot_description gazebo.launch.py use_slam:=true   # or :=false with localization
+
+# Terminal 2: A* global planner (publishes /a_star/path)
+ros2 run bumperbot_planning a_star_planner
+
+# Terminal 3: PD motion planner OR pure pursuit controller
+ros2 run bumperbot_motion pd_motion_planner        # PD tracking
+# ros2 run bumperbot_motion pure_pursuit          # alternative pure pursuit tracking
+```
+
+In RViz (using `global_localization.rviz` or a similar setup):
+
+- Fixed Frame: `map`
+- Use the `2D Goal Pose` tool (topic `/goal_pose`) to set a goal.
+- You should see:
+  - Global path on `/a_star/path`
+  - Next target pose on `/pd/next_pose` (PD) or `/pure_pursuit/carrot` (pure pursuit)
+  - Velocity commands on `/bumperbot_controller/cmd_vel_unstamped`
+
+---
+
+## 10. Git: Push Your Changes
 
 Use the standard Git flow to push updates (including doc changes) to GitHub.
 
