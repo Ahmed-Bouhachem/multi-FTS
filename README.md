@@ -331,3 +331,28 @@ git add -A
 git commit -m "Update docs and configs"
 git push origin main
 ```
+
+---
+
+## 11. Costmap Standalone Test Commands
+
+Run the Nav2 costmap node with the bumperbot costmap configuration:
+
+```bash
+cd ~/FTS-repo
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+
+ros2 run nav2_costmap_2d nav2_costmap_2d --ros-args \
+  --params-file ~/FTS-repo/src/bumperbot_navigation/config/costmap.yaml
+```
+
+Useful lifecycle commands for the costmap node:
+
+```bash
+ros2 lifecycle get /costmap/costmap
+
+# Configure and activate the costmap
+ros2 lifecycle set /costmap/costmap configure   # (transition id 1)
+ros2 lifecycle set /costmap/costmap activate    # (transition id 3)
+```
