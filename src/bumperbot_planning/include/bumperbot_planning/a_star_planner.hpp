@@ -1,88 +1,92 @@
 #ifndef A_STAR_PLANNER_HPP
 #define A_STAR_PLANNER_HPP
 
+#include <string>
+#include <memory>
+
 #include "rclcpp/rclcpp.hpp"
-#include "nav_msgs/msg/occupancy_grid.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+
+#include "nav2_core/global_planner.hpp"
 #include "nav_msgs/msg/path.hpp"
-#include "geometry_msgs/msg/pose.hpp"
+#include "nav2_util/robot_utils.hpp"
+#include "nav2_util/lifecycle_node.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "nav2_msgs/action/smooth_path.hpp"
 
-#include "tf2_ros/buffer.hpp"
-#include "tf2_ros/transform_listener.hpp"
-namespace bumperbot_planning {
+namespace bumperbot_planning
+{
+struct GraphNode
+{
+    int x;
+    int y;
+    int cost;
+    double heuristic;
+    std::shared_ptr<GraphNode> prev;
 
-    // Graph node used by the A* search; stores cost, heuristic and back-pointer.
-    struct GraphNode
-        {
-            int x;
-            int y;
-            int cost;
-            double heuristic;
-            std::shared_ptr<GraphNode> prev;
+    GraphNode() : GraphNode(0,0) {}
 
-            GraphNode() : GraphNode(0,0) {}
+    GraphNode(int in_x, int in_y) : x(in_x), y(in_y), cost(0){}
 
-            // Construct a node at (in_x, in_y) with zero cost and heuristic.
-            GraphNode(int in_x, int in_y) : x(in_x), y(in_y), cost(0){}
+    bool operator>(const GraphNode & other) const { 
+        return cost + heuristic > other.cost + other.heuristic;
+    }
 
-            // Priority-queue comparison using f = g + h.
-            bool operator>(const GraphNode & other) const { 
-                return cost + heuristic > other.cost + other.heuristic;
-            }
+    bool operator==(const GraphNode & other) const {
+        return x == other.x && y == other.y;
+    }
 
-            // Two nodes are equal if they share the same grid coordinates.
-            bool operator==(const GraphNode & other) const {
-                return x == other.x && y == other.y;
-            }
+    GraphNode operator+(std::pair<int, int> const & other) {
+        GraphNode res(x + other.first, y + other.second);
+        return res;
+    }
+};
 
-            // Add an integer (dx, dy) offset to obtain a neighbour node.
-            GraphNode operator+(std::pair<int, int> const & other) {
-                GraphNode res(x + other.first, y + other.second);
-                return res;
-            }
-        };
+class AStarPlanner : public nav2_core::GlobalPlanner
+{
+public:
+  AStarPlanner() = default;
+  ~AStarPlanner() = default;
 
-    // Node implementing a simple A* grid planner over an OccupancyGrid.
-    class AStarPlanner : public rclcpp::Node
-    {
-        public: 
-            // Construct the planner node and set up subscriptions and publishers.
-            AStarPlanner();
+  void configure(
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+    std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
+    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
 
-        private:
-            rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
-            rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-            rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
-            rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
+  void cleanup() override;
 
-            nav_msgs::msg::OccupancyGrid::SharedPtr map_;
-            nav_msgs::msg::OccupancyGrid visited_map_;
+  void activate() override;
 
-            std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-            std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  void deactivate() override;
 
-            // OccupancyGrid callback: cache the map and reset visited nodes.
-            void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr map);
-            // Goal callback: compute an A* path between robot and clicked goal.
-            void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr pose);
+  nav_msgs::msg::Path createPlan(
+    const geometry_msgs::msg::PoseStamped & start,
+    const geometry_msgs::msg::PoseStamped & goal
+    // this for jazzy or newer version std::function<bool()> cancel_checker
+    ) override;
 
-            // Convert a world pose to a grid node.
-            GraphNode worldToGrid(const geometry_msgs::msg::Pose & pose);
-            // Convert a grid node back into a world pose.
-            geometry_msgs::msg::Pose gridToWorld(const GraphNode & node);
-            // True if the node lies inside the map bounds.
-            bool poseOnMap(const GraphNode & node);
-            // Convert a node into a linear OccupancyGrid index.
-            unsigned poseToCell(const GraphNode & node);
+private:
+  std::shared_ptr<tf2_ros::Buffer> tf_;
+  nav2_util::LifecycleNode::SharedPtr node_;
+  nav2_costmap_2d::Costmap2D * costmap_;
+  std::string global_frame_, name_;
+  double interpolation_resolution_;
 
-            // Manhattan distance heuristic used by A*.
-            double manhattanDistance(const GraphNode & node, const GraphNode & goal_node);
+  rclcpp_action::Client<nav2_msgs::action::SmoothPath>::SharedPtr smooth_client_;
 
-            // Core A* search routine between start and goal poses.
-            nav_msgs::msg::Path plan(const geometry_msgs::msg::Pose & start, const geometry_msgs::msg::Pose & goal);
+  bool poseOnMap(const GraphNode & node);
+  
+  GraphNode worldToGrid(const geometry_msgs::msg::Pose & pose);
+  
+  geometry_msgs::msg::Pose gridToWorld(const GraphNode & node);
+  
+  unsigned int poseToCell(const GraphNode & node);
 
-    };
-}
+  double manhattanDistance(const GraphNode &node, const GraphNode &goal_node);
+};
 
+}  // namespace bumperbot_planning
 
-#endif // A_STAR_PLANNER_HPP
+#endif  // A_STAR_PLANNER_HPP

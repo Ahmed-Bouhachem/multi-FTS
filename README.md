@@ -353,6 +353,38 @@ Useful lifecycle commands for the costmap node:
 ros2 lifecycle get /costmap/costmap
 
 # Configure and activate the costmap
-ros2 lifecycle set /costmap/costmap configure   # (transition id 1)
-ros2 lifecycle set /costmap/costmap activate    # (transition id 3)
+ros2 lifecycle set /costmap/costmap 1  # (transition id 1)
+ros2 lifecycle set /costmap/costmap 3    # (transition id 3)
+
+---
+
+## 12. Nav2 Smoother & Planner Standalone Commands
+
+Run the Nav2 smoother server with the bumperbot configuration:
+
+```bash
+# Navigate to the FTS workspace root
+cd ~/FTS-repo
+
+# Source the ROS 2 Humble environment
+source /opt/ros/humble/setup.bash
+
+# Source the local workspace overlay
+source install/setup.bash
+
+# Start the Nav2 smoother server with the bumperbot configuration
+ros2 run nav2_smoother smoother_server --ros-args --params-file ~/FTS-repo/src/bumperbot_navigation/config/smoother_server.yaml
+```
+
+Lifecycle commands to configure and activate the smoother and planner servers:
+
+```bash
+# Smoother server
+ros2 lifecycle set /smoother_server 1  # (transition id 1)
+ros2 lifecycle set /smoother_server 3    # (transition id 3)
+
+# Planner server
+ros2 lifecycle set /planner_server 1    # (transition id 1)
+ros2 lifecycle set /planner_server 3    # (transition id 3)
+```
 ```

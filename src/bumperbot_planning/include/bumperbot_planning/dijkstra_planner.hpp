@@ -1,84 +1,114 @@
+// Dijkstra-based global planner plugin for Nav2.
+// Defines a grid GraphNode helper and DijkstraPlanner, an implementation of
+// nav2_core::GlobalPlanner that plans on a 2D costmap using Dijkstra's algorithm.
 #ifndef DIJKSTRA_PLANNER_HPP
 #define DIJKSTRA_PLANNER_HPP
 
+#include <string>
+#include <memory>
+
 #include "rclcpp/rclcpp.hpp"
-#include "nav_msgs/msg/occupancy_grid.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+
+#include "nav2_core/global_planner.hpp"
 #include "nav_msgs/msg/path.hpp"
-#include "geometry_msgs/msg/pose.hpp"
+#include "nav2_util/robot_utils.hpp"
+#include "nav2_util/lifecycle_node.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "nav2_msgs/action/smooth_path.hpp"
 
-#include "tf2_ros/buffer.hpp"
-#include "tf2_ros/transform_listener.hpp"
-namespace bumperbot_planning {
+namespace bumperbot_planning
+{
+// Graph node used by Dijkstra's algorithm; stores grid indices, path cost and
+// a back-pointer to reconstruct the shortest path.
+struct GraphNode
+{
+    int x;
+    int y;
+    int cost;
+    std::shared_ptr<GraphNode> prev;
 
-    // Graph node used by Dijkstra's algorithm; stores grid indices, path cost and back-pointer.
-    struct GraphNode
-        {
-            int x;
-            int y;
-            int cost;
-            std::shared_ptr<GraphNode> prev;
+    // Construct a node at (0, 0) with zero cost.
+    GraphNode() : GraphNode(0,0) {}
 
-            GraphNode() : GraphNode(0,0) {}
+    // Construct a node at grid coordinates (in_x, in_y) with zero initial cost.
+    GraphNode(int in_x, int in_y) : x(in_x), y(in_y), cost(0){}
 
-            // Construct a node at grid coordinates (in_x, in_y) with zero initial cost.
-            GraphNode(int in_x, int in_y) : x(in_x), y(in_y), cost(0){}
+    // Comparison operator based on total cost so nodes can be ordered in a
+    // std::priority_queue for Dijkstra's search.
+    bool operator>(const GraphNode & other) const { 
+        return cost > other.cost;
+    }
 
-            // Priority-queue comparison based on total cost.
-            bool operator>(const GraphNode & other) const { 
-                return cost > other.cost;
-            }
+    // Equality test based solely on grid position.
+    bool operator==(const GraphNode & other) const {
+        return x == other.x && y == other.y;
+    }
 
-            // Equality test based on grid position.
-            bool operator==(const GraphNode & other) const {
-                return x == other.x && y == other.y;
-            }
+    // Add an (dx, dy) offset to this node to obtain a neighbouring grid cell.
+    GraphNode operator+(std::pair<int, int> const & other) {
+        GraphNode res(x + other.first, y + other.second);
+        return res;
+    }
+};  
 
-            // Add an (dx, dy) offset to this node to obtain a neighbour.
-            GraphNode operator+(std::pair<int, int> const & other) {
-                GraphNode res(x + other.first, y + other.second);
-                return res;
-            }
-        };
+// Global planner plugin implementing Dijkstra search on a 2D Nav2 costmap.
+class DijkstraPlanner : public nav2_core::GlobalPlanner
+{
+public:
+  // Default constructor and destructor; heavy initialisation happens in configure().
+  DijkstraPlanner() = default;
+  ~DijkstraPlanner() = default;
 
-    // Node implementing a simple Dijkstra grid planner over an OccupancyGrid.
-    class AStarPlanner : public rclcpp::Node
-    {
-        public: 
-            // Construct the planner node and subscribe to map and goal.
-            AStarPlanner();
+  // Configure the planner from the Nav2 lifecycle node, TF buffer and costmap.
+  void configure(
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+    std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
+    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
 
-        private:
-            rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
-            rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_sub_;
-            rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
-            rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
+  void cleanup() override;
 
-            nav_msgs::msg::OccupancyGrid::SharedPtr map_;
-            nav_msgs::msg::OccupancyGrid visited_map_;
+  void activate() override;
 
-            std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-            std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  void deactivate() override;
 
-            // OccupancyGrid callback: cache the map and reset the visited grid.
-            void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr map);
-            // Goal callback: compute a shortest path from the robot to the clicked goal.
-            void goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr pose);
+  // Compute a global plan between start and goal poses in the global frame.
+  nav_msgs::msg::Path createPlan(
+    const geometry_msgs::msg::PoseStamped & start,
+    const geometry_msgs::msg::PoseStamped & goal
+    // this for jazzy or newer version std::function<bool()> cancel_checker
+    ) override;
 
-            // Convert a world pose into a grid node.
-            GraphNode worldToGrid(const geometry_msgs::msg::Pose & pose);
-            // Convert a grid node back into a world pose.
-            geometry_msgs::msg::Pose gridToWorld(const GraphNode & node);
-            // Check whether a node lies inside the map bounds.
-            bool poseOnMap(const GraphNode & node);
-            // Convert a node into a linear cell index.
-            unsigned poseToCell(const GraphNode & node);
+private:
+  // TF buffer used to transform poses into the global planning frame.
+  std::shared_ptr<tf2_ros::Buffer> tf_;
+  // Owning lifecycle node handle provided by Nav2.
+  nav2_util::LifecycleNode::SharedPtr node_;
+  // Pointer to the underlying 2D costmap used for planning.
+  nav2_costmap_2d::Costmap2D * costmap_;
+  // Name of the global frame used for planning and the plugin instance name.
+  std::string global_frame_, name_;
+  // Resolution at which the global path is interpolated.
+  double interpolation_resolution_;
 
-            // Run Dijkstra's search between start and goal poses.
-            nav_msgs::msg::Path plan(const geometry_msgs::msg::Pose & start, const geometry_msgs::msg::Pose & goal);
+  // Client used to call the Nav2 smooth path action to post-process the raw plan.
+  rclcpp_action::Client<nav2_msgs::action::SmoothPath>::SharedPtr smooth_client_;
 
-    };
-}
+  // Return true if the given node lies inside the current costmap bounds.
+  bool poseOnMap(const GraphNode & node);
 
+  // Convert a world-frame pose into a grid node on the costmap.
+  GraphNode worldToGrid(const geometry_msgs::msg::Pose & pose);
 
-#endif // DIJKSTRA_PLANNER_HPP
+  // Convert a grid node back into a world-frame pose on the costmap.
+  geometry_msgs::msg::Pose gridToWorld(const GraphNode & node);
+
+  // Map a grid node to a linear cell index into the costmap data array.
+  unsigned int poseToCell(const GraphNode & node);
+};
+
+}  // namespace bumperbot_planning
+
+#endif  // DIJKSTRA_PLANNER_HPP
