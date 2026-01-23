@@ -11,7 +11,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     use_sim_time = LaunchConfiguration("use_sim_time")
-    lifecycle_nodes = ["controller_server", "planner_server", "smoother_server"]
+    lifecycle_nodes = ["controller_server", "planner_server", "smoother_server", "bt_navigator", "behavior_server"]
     bumperbot_navigation_pkg = get_package_share_directory("bumperbot_navigation")
 
     use_sim_time_arg = DeclareLaunchArgument(
@@ -23,6 +23,10 @@ def generate_launch_description():
         package="nav2_controller",
         executable="controller_server",
         output="screen",
+        remappings=[
+            # Send Nav2 velocity commands directly to the diff-drive controller
+            ("cmd_vel", "/bumperbot_controller/cmd_vel_unstamped"),
+        ],
         parameters=[
             os.path.join(
                 bumperbot_navigation_pkg,
@@ -42,6 +46,37 @@ def generate_launch_description():
                 bumperbot_navigation_pkg,
                 "config",
                 "planner_server.yaml"),
+            {"use_sim_time": use_sim_time}
+        ],
+    )
+
+    nav2_behaviors = Node(
+        package="nav2_behaviors",
+        executable="behavior_server",
+        name="behavior_server",
+        output="screen",
+        remappings=[
+            ("cmd_vel", "/bumperbot_controller/cmd_vel_unstamped"),
+        ],
+        parameters=[
+            os.path.join(
+                bumperbot_navigation_pkg,
+                "config",
+                "behavior_server.yaml"),
+            {"use_sim_time": use_sim_time}
+        ],
+    )
+    
+    nav2_bt_navigator = Node(
+        package="nav2_bt_navigator",
+        executable="bt_navigator",
+        name="bt_navigator",
+        output="screen",
+        parameters=[
+            os.path.join(
+                bumperbot_navigation_pkg,
+                "config",
+                "bt_navigator.yaml"),
             {"use_sim_time": use_sim_time}
         ],
     )
@@ -77,5 +112,7 @@ def generate_launch_description():
         nav2_controller_server,
         nav2_planner_server,
         nav2_smoother_server,
+        nav2_behaviors,
+        nav2_bt_navigator,
         nav2_lifecycle_manager,
     ])
