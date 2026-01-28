@@ -75,7 +75,7 @@ SimpleController::SimpleController(const std::string & name)
         "/joint_states", 10,
         std::bind(&SimpleController::jointCallback, this, _1));
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>(
-         "/bumperbot_controller/odom", 10);
+         "bumperbot_controller/odom", 10);
 
     // Derivation for a differential drive:
     // [ v ]   = [ r/2      r/2 ] [ wr ]
