@@ -2,17 +2,26 @@
 
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
+  <xacro:arg name="with_ros2_control" default="true"/>
+
   <!-- Start GZ or Ignition depending on ROS 2 Version -->
   <xacro:arg name="is_ignition" default="true"/>
 
   <!-- Load Simulated or Real Hardware Interfaces -->
   <xacro:arg name="is_sim" default="true"/>
 
-  <!-- Include Gazebo Parameters -->
-  <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_gazebo.xacro" />
+  <!-- Namespace used to scope ros2_control and Gazebo plugins -->
+  <xacro:arg name="ros_namespace" default=""/>
 
-  <!-- Include ros2_control Plugins -->
-  <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_ros2_control.xacro" />
+  <!-- Include Gazebo Parameters and instantiate them with the namespace -->
+  <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_gazebo.xacro" />
+  <xacro:bumperbot_gazebo ros_namespace="$(arg ros_namespace)" />
+
+  <!-- Include ros2_control Plugins (optional) -->
+  <xacro:if value="$(arg with_ros2_control)">
+    <xacro:include filename="$(find bumperbot_description)/urdf/bumperbot_ros2_control.xacro" />
+  </xacro:if>
+
 
   <link name="base_footprint"/>
   

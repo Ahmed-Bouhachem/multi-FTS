@@ -2,80 +2,90 @@
 
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <!-- Wheels -->
-  <gazebo reference="wheel_left_link">
-    <mu1>1000000000000000.0</mu1>
-    <mu2>1000000000000000.0</mu2>
-    <kp>1000000000000.0</kp>
-    <kd>10.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
-    <fdir1>1 0 0</fdir1>
-  </gazebo>
+  <!-- Macro that injects Gazebo / gz_ros2_control plugins for a namespaced robot -->
+  <xacro:macro name="bumperbot_gazebo" params="ros_namespace">
 
-  <gazebo reference="wheel_right_link">
-    <mu1>1000000000000000.0</mu1>
-    <mu2>1000000000000000.0</mu2>
-    <kp>1000000000000.0</kp>
-    <kd>10.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>0.1</maxVel>
-    <fdir1>1 0 0</fdir1>
-  </gazebo>
-    
-  <!-- Caster Wheels -->
-  <gazebo reference="caster_rear_link">
-    <mu1>0.1</mu1>
-    <mu2>0.1</mu2>
-    <kp>1000000.0</kp>
-    <kd>100.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>1.0</maxVel>
-  </gazebo>
-    
-  <gazebo reference="caster_front_link">
-    <mu1>0.1</mu1>
-    <mu2>0.1</mu2>
-    <kp>1000000.0</kp>
-    <kd>100.0</kd>
-    <minDepth>0.001</minDepth>
-    <maxVel>1.0</maxVel>
-  </gazebo>
+    <!-- Wheels -->
+    <gazebo reference="wheel_left_link">
+      <mu1>1000000000000000.0</mu1>
+      <mu2>1000000000000000.0</mu2>
+      <kp>1000000000000.0</kp>
+      <kd>10.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.1</maxVel>
+      <fdir1>1 0 0</fdir1>
+    </gazebo>
 
-  <!-- ROS 2 Control -->
-  <gazebo>
-    <!-- ROS 2 Humble -->
-    <xacro:if value="$(arg is_ignition)">
-      <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
-        <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
-      </plugin>
-      <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu">
-      </plugin>
-      <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
-        <render_engine>ogre2</render_engine>
-      </plugin>
-    </xacro:if>
+    <gazebo reference="wheel_right_link">
+      <mu1>1000000000000000.0</mu1>
+      <mu2>1000000000000000.0</mu2>
+      <kp>1000000000000.0</kp>
+      <kd>10.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.1</maxVel>
+      <fdir1>1 0 0</fdir1>
+    </gazebo>
 
-    <!-- ROS 2 Iron or above -->
-    <xacro:unless value="$(arg is_ignition)">
-      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-        <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
-      </plugin>
-      <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu">
-      </plugin>
-      <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-        <render_engine>ogre2</render_engine>
-      </plugin>
-    </xacro:unless>
-  </gazebo>
+    <!-- Caster Wheels -->
+    <gazebo reference="caster_rear_link">
+      <mu1>0.1</mu1>
+      <mu2>0.1</mu2>
+      <kp>1000000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>1.0</maxVel>
+    </gazebo>
 
-  <!-- IMU -->
-  <gazebo reference="imu_link">
-    <sensor name="imu" type="imu">
+    <gazebo reference="caster_front_link">
+      <mu1>0.1</mu1>
+      <mu2>0.1</mu2>
+      <kp>1000000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>1.0</maxVel>
+    </gazebo>
+
+    <!-- ROS 2 Control + sensors plugins -->
+    <gazebo>
+      <!-- ROS 2 Humble / Ignition path -->
+      <xacro:if value="$(arg is_ignition)">
+        <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+          <ros>
+            <namespace>${ros_namespace}</namespace>
+          </ros>
+          <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
+        </plugin>
+        <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>
+        <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
+          <!-- Use Ogre2 rendering so GPU lidar works correctly -->
+          <render_engine>ogre2</render_engine>
+        </plugin>
+      </xacro:if>
+
+      <!-- ROS 2 Iron+ / gz_sim path -->
+      <xacro:unless value="$(arg is_ignition)">
+        <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+          <ros>
+            <namespace>${ros_namespace}</namespace>
+          </ros>
+          <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
+        </plugin>
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+          <!-- Use Ogre2 rendering so GPU lidar works correctly -->
+          <render_engine>ogre2</render_engine>
+        </plugin>
+      </xacro:unless>
+    </gazebo>
+
+    <!-- IMU -->
+    <gazebo reference="imu_link">
+      <sensor name="imu" type="imu">
         <always_on>true</always_on>
         <update_rate>100</update_rate>
         <gz_frame_id>imu_link</gz_frame_id>
-        <topic>imu</topic>
+        <!-- Namespace IMU topic per robot so multi-robot setups do not collide -->
+        <topic>/${ros_namespace}/imu</topic>
         <imu>
           <angular_velocity>
             <x>
@@ -118,38 +128,45 @@
             </z>
           </linear_acceleration>
         </imu>
-    </sensor>
-  </gazebo>
+      </sensor>
+    </gazebo>
 
-  <!-- 2D Laser Sensor -->
-  <gazebo reference="laser_link">
-    <sensor name="lidar" type="gpu_lidar">
-      <always_on>true</always_on>
-      <visualize>true</visualize>
-      <topic>scan</topic>
-      <update_rate>5</update_rate>
-      <gz_frame_id>laser_link</gz_frame_id>
-      <lidar>
-        <scan>
-          <horizontal>
-            <samples>360</samples>
-            <resolution>1.00000</resolution>
-            <min_angle>0.000000</min_angle>
-            <max_angle>6.280000</max_angle>
-          </horizontal>
-        </scan>
-        <range>
-          <min>0.120000</min>
-          <max>12.0</max>
-          <resolution>0.02</resolution>
-        </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.01</stddev>
-        </noise>
-      </lidar>
-    </sensor>
-  </gazebo>
+    <!-- 2D Laser Sensor for Nav2 / SLAM.
+         Topics are namespaced per robot using ros_namespace so that
+         /robot1/scan, /robot2/scan, ... can be bridged independently. -->
+    <gazebo reference="laser_link">
+      <sensor name="gpu_lidar" type="gpu_lidar">
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <!-- Pose is relative to laser_link via the gazebo reference -->
+        <pose>0 0 0 0 0 0</pose>
+        <!-- Namespace scan topic for multi-robot setups -->
+        <topic>/${ros_namespace}/scan</topic>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>720</samples>
+              <resolution>1</resolution>
+              <min_angle>-1.5708</min_angle>
+              <max_angle>1.5708</max_angle>
+            </horizontal>
+            <vertical>
+              <samples>1</samples>
+              <resolution>1</resolution>
+              <min_angle>0.0</min_angle>
+              <max_angle>0.0</max_angle>
+            </vertical>
+          </scan>
+          <range>
+            <min>0.12</min>
+            <max>3.5</max>
+            <resolution>0.01</resolution>
+          </range>
+        </ray>
+        <visualize>true</visualize>
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
 
 </robot>

@@ -9,6 +9,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     RegisterEventHandler,
     SetEnvironmentVariable,
+    TimerAction,
 )
 from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
@@ -125,6 +126,8 @@ def generate_launch_description():
         ])
     )
 
+
+
     # Bridge Web UI velocity commands (Twist on /cmd_vel_unstamped) to the controller
     # (TwistStamped on /cmd_vel) so that running webui/app.py moves the robot
     # when Gazebo + controllers are running.
@@ -135,13 +138,15 @@ def generate_launch_description():
         parameters=[{"use_sim_time": use_sim_time}],
         condition=IfCondition(start_helper_nodes),
     )
-
+    '''
     start_controllers = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=gz_spawn_entity,
             on_exit=[controller_launch]
         )
     )
+    '''
+    
 
     localization = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -193,6 +198,26 @@ def generate_launch_description():
         parameters=[{"use_sim_time": True}]
     )
 
+    nav2_after_controllers = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=gz_spawn_entity,
+            on_exit=[
+                controller_launch,
+
+                # Delay Nav2 bringup so odom + TF exist (important on WSL)
+                TimerAction(
+                    period=6.0,   # you can tune 4–8 sec on WSL
+                    actions=[
+                        localization,
+                        slam,
+                        navigation,
+                        rviz_localization,
+                    ],
+                ),
+            ],
+        )
+    )
+
     return LaunchDescription([
         use_slam_arg,
         model_arg,
@@ -204,10 +229,8 @@ def generate_launch_description():
         gz_spawn_entity,
         gz_ros2_bridge,
         cmd_vel_relay_node,
-        start_controllers,
         safety_stop,
-        localization,
-        slam,
-        navigation,
-        rviz_localization
+
+        nav2_after_controllers,   # ⬅ ONLY THIS
     ])
+
