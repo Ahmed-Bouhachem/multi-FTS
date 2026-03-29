@@ -41,3 +41,4 @@ Makefile
 *.out
 compile_commands.json
 .venv/
+.codex
