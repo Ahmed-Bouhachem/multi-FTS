@@ -46,6 +46,8 @@ bumperbot_controller:
     base_frame_id: base_footprint
     publish_limited_velocity: true
     publish_wheel_data: true
+    # Publish odom -> base_footprint TF so Nav2 has a complete
+    # map -> odom -> base_footprint -> base_link tree per robot.
     enable_odom_tf: true
 
     linear:
