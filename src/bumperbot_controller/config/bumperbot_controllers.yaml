@@ -37,7 +37,7 @@ bumperbot_controller:
 
     wheel_radius: 0.036
     # Matches wheel joint Y offsets of +/- 0.0701 m in the URDF (track width ≈ 0.1402 m)
-    wheel_separation: 0.17
+    wheel_separation: 0.1402
     left_wheel_radius_multiplier: 1.0
     right_wheel_radius_multiplier: 1.0
     wheel_separation_multiplier: 1.0

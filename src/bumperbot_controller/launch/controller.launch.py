@@ -45,6 +45,12 @@ def noisy_controller(context, *args, **kwargs):
 
 def generate_launch_description():
     # ---- Launch args ----
+    enable_noisy_odometry_arg = DeclareLaunchArgument(
+        "enable_noisy_odometry",
+        default_value="False",
+        description="If True, launch noisy odometry publisher for localization testing."
+    )
+
     use_python_arg = DeclareLaunchArgument(
         "use_python",
         default_value="False",
@@ -69,15 +75,16 @@ def generate_launch_description():
 
     wheel_radius_error_arg = DeclareLaunchArgument(
         "wheel_radius_error",
-        default_value="0.005"
+        default_value="0.0"
     )
 
     wheel_separation_error_arg = DeclareLaunchArgument(
         "wheel_separation_error",
-        default_value="0.02"
+        default_value="0.0"
     )
 
     # ---- Launch configs ----
+    enable_noisy_odometry = LaunchConfiguration("enable_noisy_odometry")
     use_python = LaunchConfiguration("use_python")
     wheel_radius = LaunchConfiguration("wheel_radius")
     wheel_separation = LaunchConfiguration("wheel_separation")
@@ -159,9 +166,13 @@ def generate_launch_description():
     )
 
 
-    noisy_controller_launch = OpaqueFunction(function=noisy_controller)
+    noisy_controller_launch = OpaqueFunction(
+        function=noisy_controller,
+        condition=IfCondition(enable_noisy_odometry)
+    )
     # ---- Assemble LD ----
     return LaunchDescription([
+        enable_noisy_odometry_arg,
         use_python_arg,
         wheel_radius_arg,
         wheel_separation_arg,

@@ -75,7 +75,7 @@ SimpleController::SimpleController(const std::string & name)
         "/joint_states", 10,
         std::bind(&SimpleController::jointCallback, this, _1));
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>(
-         "bumperbot_controller/odom", 10);
+         "/bumperbot_controller/odom", 10);
 
     // Derivation for a differential drive:
     // [ v ]   = [ r/2      r/2 ] [ wr ]
@@ -207,8 +207,9 @@ void SimpleController::jointCallback(const sensor_msgs::msg::JointState &msg)
     odom_msg_.pose.pose.orientation.z = q.z();
     odom_msg_.pose.pose.orientation.w = q.w();
     odom_msg_.header.stamp = get_clock()->now();
-    odom_msg_.pose.pose.orientation.x = x_;
-    odom_msg_.pose.pose.orientation.y = y_;
+    odom_msg_.pose.pose.position.x = x_;
+    odom_msg_.pose.pose.position.y = y_;
+    odom_msg_.pose.pose.position.z = 0.0;
     odom_msg_.twist.twist.linear.x = linear;
     odom_msg_.twist.twist.angular.z = angular;
 
