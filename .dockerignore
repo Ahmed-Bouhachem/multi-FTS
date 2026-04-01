@@ -1,0 +1,13 @@
+.git
+.gitignore
+.vscode
+.venv
+.venv-1
+build
+install
+log
+__pycache__
+*.pyc
+*.swp
+*.out
+.DS_Store

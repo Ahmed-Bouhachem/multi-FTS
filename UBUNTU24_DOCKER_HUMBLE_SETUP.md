@@ -1,18 +1,23 @@
-# Ubuntu 24.04 + Docker + ROS 2 Humble (Official Migration Runbook)
+# Ubuntu 24.04 + Docker + ROS 2 Humble (Migration Runbook)
 
-Use this runbook on native Ubuntu 24.04 to work fully on Linux with ROS 2 Humble in Docker.
+This is the official Linux migration path for this workspace.
+
+It uses repository-native Docker files so setup is reproducible:
+
+- `docker/humble/Dockerfile`
+- `docker/humble/apt-packages.txt`
+- `docker/humble/entrypoint.sh`
+- `docker-compose.humble.yml`
 
 ## 0) Target branch
 
-Use this branch as the starting point:
+Use this branch:
 
 - `migration_humble_baseline_prep`
 
-If you merge it to `main` later, replace the branch name in clone commands.
-
 ## 1) Host setup on Ubuntu 24.04
 
-Install basic host tools:
+Install host tools:
 
 ```bash
 sudo apt update
@@ -36,7 +41,7 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 sudo usermod -aG docker "$USER"
 ```
 
-Log out and log back in once, then verify:
+Log out and back in once, then verify:
 
 ```bash
 docker --version
@@ -48,130 +53,46 @@ docker run --rm hello-world
 ```bash
 mkdir -p ~/dev
 cd ~/dev
-
-# SSH
 git clone -b migration_humble_baseline_prep git@github.com:Ahmed-Bouhachem/multi-FTS.git
-
-# OR HTTPS
-# git clone -b migration_humble_baseline_prep https://github.com/Ahmed-Bouhachem/multi-FTS.git
-
 cd multi-FTS
 git status
 ```
 
-## 3) Start Humble container (GUI-capable)
+## 3) Build and start container
 
-Allow local Docker containers to use your X display:
+Allow Docker GUI access for Gazebo / RViz:
 
 ```bash
 xhost +local:docker
 ```
 
-Pull base ROS image:
+Build and start the dev container:
 
 ```bash
-docker pull osrf/ros:humble-desktop
+docker compose -f docker-compose.humble.yml build
+docker compose -f docker-compose.humble.yml up -d
+docker compose -f docker-compose.humble.yml exec fts-dev bash
 ```
 
-Create and enter dev container:
-
-```bash
-docker run -it --name multi-fts-humble \
-  --network host \
-  --ipc host \
-  -e DISPLAY=$DISPLAY \
-  -e QT_X11_NO_MITSHM=1 \
-  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-  -v ~/dev/multi-FTS:/workspaces/multi-FTS \
-  osrf/ros:humble-desktop bash
-```
-
-## 4) Install required packages inside container
-
-Run once inside container:
-
-```bash
-apt update && apt install -y \
-  build-essential git curl gnupg2 lsb-release locales \
-  python3-colcon-common-extensions python3-rosdep python3-vcstool python3-pip \
-  libeigen3-dev \
-  ros-humble-action-msgs \
-  ros-humble-ament-cmake \
-  ros-humble-controller-manager \
-  ros-humble-geometry-msgs \
-  ros-humble-gz-ros2-control \
-  ros-humble-joint-state-publisher \
-  ros-humble-joint-state-publisher-gui \
-  ros-humble-launch \
-  ros-humble-launch-ros \
-  ros-humble-nav-msgs \
-  ros-humble-nav2-amcl \
-  ros-humble-nav2-bt-navigator \
-  ros-humble-nav2-controller \
-  ros-humble-nav2-core \
-  ros-humble-nav2-costmap-2d \
-  ros-humble-nav2-lifecycle-manager \
-  ros-humble-nav2-map-server \
-  ros-humble-nav2-msgs \
-  ros-humble-nav2-planner \
-  ros-humble-nav2-rviz-plugins \
-  ros-humble-nav2-smoother \
-  ros-humble-nav2-util \
-  ros-humble-nav2-waypoint-follower \
-  ros-humble-pluginlib \
-  ros-humble-rcl-interfaces \
-  ros-humble-rclcpp \
-  ros-humble-rclcpp-action \
-  ros-humble-rclcpp-components \
-  ros-humble-rclcpp-lifecycle \
-  ros-humble-rclpy \
-  ros-humble-robot-localization \
-  ros-humble-robot-state-publisher \
-  ros-humble-ros-gz-bridge \
-  ros-humble-ros-gz-sim \
-  ros-humble-ros2-controllers \
-  ros-humble-ros2launch \
-  ros-humble-rosidl-default-generators \
-  ros-humble-rosidl-default-runtime \
-  ros-humble-rviz2 \
-  ros-humble-sensor-msgs \
-  ros-humble-slam-toolbox \
-  ros-humble-std-msgs \
-  ros-humble-tf-transformations \
-  ros-humble-tf2 \
-  ros-humble-tf2-geometry-msgs \
-  ros-humble-tf2-ros \
-  ros-humble-turtlesim \
-  ros-humble-twist-mux-msgs \
-  ros-humble-visualization-msgs \
-  ros-humble-webots-ros2-driver \
-  ros-humble-xacro
-```
-
-Initialize rosdep (inside container):
-
-```bash
-rosdep init || true
-rosdep update
-```
-
-## 5) Build workspace inside container
+## 4) First-time workspace bootstrap (inside container)
 
 ```bash
 source /opt/ros/humble/setup.bash
 cd /workspaces/multi-FTS
+rosdep update
 rosdep install --from-paths src --ignore-src -r -y
 colcon build --base-paths src --symlink-install
 source install/setup.bash
 ```
 
-## 6) Daily workflow
+## 5) Daily workflow
 
-From host terminal:
+From host:
 
 ```bash
-docker start multi-fts-humble
-docker exec -it multi-fts-humble bash
+cd ~/dev/multi-FTS
+docker compose -f docker-compose.humble.yml up -d
+docker compose -f docker-compose.humble.yml exec fts-dev bash
 ```
 
 Inside container:
@@ -182,8 +103,24 @@ cd /workspaces/multi-FTS
 source install/setup.bash
 ```
 
-## 7) Notes and rules
+Stop container when done:
 
-- Do not apt-install local workspace packages: `bumperbot_description`, `bumperbot_motion`, `bumperbot_msgs`, `bumperbot_planning`.
-- Keep repository on host (`~/dev/multi-FTS`) and mount it into Docker. Do not use container-only clones for development.
-- If GUI apps fail, rerun `xhost +local:docker` on host and verify `echo $DISPLAY`.
+```bash
+docker compose -f docker-compose.humble.yml down
+```
+
+## 6) Dependency source of truth
+
+All apt dependencies installed into the image are listed in:
+
+- `docker/humble/apt-packages.txt`
+
+Update that file when adding new Ubuntu/ROS package dependencies.
+
+## 7) Notes
+
+- Keep repository on host and mount it into container (already done in `docker-compose.humble.yml`).
+- Do not install local workspace packages via apt (`bumperbot_description`, `bumperbot_motion`, `bumperbot_msgs`, `bumperbot_planning`).
+- If GUI apps fail, rerun `xhost +local:docker` and verify `echo $DISPLAY`.
+- If GPU acceleration is unstable, set software rendering before launching:
+  - `export LIBGL_ALWAYS_SOFTWARE=1`

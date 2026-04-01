@@ -2,6 +2,14 @@
 
 High‑level teleop, simulation, mapping, and localization for the Bumperbot robot using ROS 2 Humble.
 
+## Ubuntu 24.04 + Docker Path
+
+For Linux migration and Docker-first setup, use:
+
+- `UBUNTU24_DOCKER_HUMBLE_SETUP.md`
+- `docker-compose.humble.yml`
+- `docker/humble/Dockerfile`
+
 ---
 
 ## 1. Install & Build
