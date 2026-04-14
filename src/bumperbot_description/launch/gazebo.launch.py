@@ -204,15 +204,17 @@ def generate_launch_description():
             on_exit=[
                 controller_launch,
 
-                # Delay Nav2 bringup so odom + TF exist (important on WSL)
+                # Delay localization so odom + TF exist before AMCL starts
                 TimerAction(
-                    period=6.0,   # you can tune 4–8 sec on WSL
-                    actions=[
-                        localization,
-                        slam,
-                        navigation,
-                        rviz_localization,
-                    ],
+                    period=6.0,
+                    actions=[localization, slam],
+                ),
+                # Delay navigation a bit longer so map_server has time to
+                # activate and publish /map before the costmap static layer
+                # subscribes (FastDDS TRANSIENT_LOCAL race condition on Humble)
+                TimerAction(
+                    period=12.0,
+                    actions=[navigation, rviz_localization],
                 ),
             ],
         )

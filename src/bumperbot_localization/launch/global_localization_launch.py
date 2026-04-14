@@ -71,7 +71,10 @@ def generate_launch_description():
         parameters=[
             {"node_names": lifecycle_nodes},
             {"use_sim_time": use_sim_time},
-            {"autostart": True}
+            {"autostart": True},
+            # Disable bond so the lifecycle manager does not crash (SIGABRT)
+            # when a managed node's bond heartbeat is delayed under sim time
+            {"bond_timeout": 0.0},
         ],
     )
 

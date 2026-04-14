@@ -77,7 +77,17 @@ def generate_launch_description():
                 bumperbot_navigation_pkg,
                 "config",
                 "bt_navigator.yaml"),
-            {"use_sim_time": use_sim_time}
+            {"use_sim_time": use_sim_time},
+            # Override hardcoded paths from yaml so BTs resolve correctly
+            # inside the container (installed under bumperbot_navigation share)
+            {"default_nav_to_pose_bt_xml": os.path.join(
+                bumperbot_navigation_pkg,
+                "behavior_tree",
+                "simple_navigation_w_replanning_and_recovery.xml")},
+            {"default_nav_through_poses_bt_xml": os.path.join(
+                bumperbot_navigation_pkg,
+                "behavior_tree",
+                "simple_navigation.xml")},
         ],
     )
 
@@ -103,7 +113,8 @@ def generate_launch_description():
         parameters=[
             {"node_names": lifecycle_nodes},
             {"use_sim_time": use_sim_time},
-            {"autostart": True}
+            {"autostart": True},
+            {"bond_timeout": 0.0},
         ],
     )
 
