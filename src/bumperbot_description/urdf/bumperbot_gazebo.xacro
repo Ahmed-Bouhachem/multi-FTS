@@ -2,8 +2,11 @@
 
 <robot name="bumperbot" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <!-- Macro that injects Gazebo / gz_ros2_control plugins for a namespaced robot -->
-  <xacro:macro name="bumperbot_gazebo" params="ros_namespace">
+  <!-- Macro that injects Gazebo / gz_ros2_control plugins for a namespaced robot.
+       is_primary=true loads world-level singleton system plugins (Sensors, IMU).
+       Set is_primary=false on all but one robot in a multi-robot scene — loading
+       those plugins twice crashes Ogre2 (libGLdispatch segfault). -->
+  <xacro:macro name="bumperbot_gazebo" params="ros_namespace is_primary:=true">
 
     <!-- Wheels -->
     <gazebo reference="wheel_left_link">
@@ -52,14 +55,20 @@
         <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
           <ros>
             <namespace>${ros_namespace}</namespace>
+            <!-- Redirect TF to namespaced topic so each robot owns its TF tree.
+                 When ros_namespace="" (single robot) this resolves to /tf — no change. -->
+            <remapping>/tf:=tf</remapping>
+            <remapping>/tf_static:=tf_static</remapping>
           </ros>
           <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
         </plugin>
-        <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>
-        <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
-          <!-- Use Ogre2 rendering so GPU lidar works correctly -->
-          <render_engine>ogre2</render_engine>
-        </plugin>
+        <xacro:if value="${is_primary}">
+          <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>
+          <plugin filename="ignition-gazebo-sensors-system" name="ignition::gazebo::systems::Sensors">
+            <!-- Use Ogre2 rendering so GPU lidar works correctly -->
+            <render_engine>ogre2</render_engine>
+          </plugin>
+        </xacro:if>
       </xacro:if>
 
       <!-- ROS 2 Iron+ / gz_sim path -->
@@ -67,14 +76,18 @@
         <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
           <ros>
             <namespace>${ros_namespace}</namespace>
+            <remapping>/tf:=tf</remapping>
+            <remapping>/tf_static:=tf_static</remapping>
           </ros>
           <parameters>$(find bumperbot_controller)/config/bumperbot_controllers.yaml</parameters>
         </plugin>
-        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
-        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-          <!-- Use Ogre2 rendering so GPU lidar works correctly -->
-          <render_engine>ogre2</render_engine>
-        </plugin>
+        <xacro:if value="${is_primary}">
+          <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+          <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+            <!-- Use Ogre2 rendering so GPU lidar works correctly -->
+            <render_engine>ogre2</render_engine>
+          </plugin>
+        </xacro:if>
       </xacro:unless>
     </gazebo>
 
