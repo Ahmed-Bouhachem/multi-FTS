@@ -42,3 +42,9 @@ Makefile
 compile_commands.json
 .venv/
 .codex
+
+# Claude Code
+.claude/
+
+# Launch logs
+launch_output.log
